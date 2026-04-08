@@ -44,7 +44,7 @@ export default function History({ onNavigate }) {
            const subDate = new Date(r.submitted_at)
            const opts = { month: "short", day: "numeric", year: "numeric" }
            
-           const status = r.status.charAt(0).toUpperCase() + r.status.slice(1)
+           const status = r.status.charAt(0).toUpperCase() + r.status.slice(1);
            
            let durationLabel = ""
            const totalDays = parseFloat(r.total_days)

@@ -133,7 +133,7 @@ export default function Request({ onNavigate }) {
   }
 
   /* computed step (auto from selections) */
-  const currentStep = leaveType ? (startDate && endDate ? 3 : startDate ? 2 : 1) : 1
+  const currentStep = leaveType ? (startDate && endDate ? 3 : 2) : 1
 
   /* duration — recalculates when dates or times change */
   const duration = useMemo(() => {
@@ -164,7 +164,7 @@ export default function Request({ onNavigate }) {
       leave_type_id: leaveTypeId,
       start_date: finalStart,
       end_date: finalEnd,
-      total_days: (duration.totalHours / 8).toFixed(3),
+      total_days: duration.totalHours / 8,
       reason: reason || ""
     };
 
@@ -319,7 +319,7 @@ export default function Request({ onNavigate }) {
           </div>
 
           {/* ─ Calendar ─ */}
-          <div className="bg-white rounded-[32px] p-6 shadow-sm self-start">
+          <div className={`bg-white rounded-[32px] p-6 shadow-sm self-start transition-opacity ${currentStep < 2 ? "opacity-50 pointer-events-none" : ""}`}>
             {/* month nav */}
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-[17px] text-[#2d3e50]">
@@ -504,7 +504,7 @@ export default function Request({ onNavigate }) {
         </div>
 
         {/* ── Bottom row: Attachments + Reason ── */}
-        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 mb-6">
+        <div className={`grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 mb-6 transition-opacity ${currentStep < 3 ? "opacity-50 pointer-events-none" : ""}`}>
           {/* Attachments */}
           <div className="bg-white rounded-[32px] p-6 shadow-sm">
             <h3 className="font-bold text-[15px] text-[#3f4a51] mb-5 flex items-center gap-2">
@@ -565,7 +565,11 @@ export default function Request({ onNavigate }) {
             <X size={18} strokeWidth={2.5} />
             Discard Request
           </button>
-          <button onClick={handleSubmit} className="!bg-[#133251] text-white !px-8 !py-4 rounded-full text-[14px] font-bold hover:bg-[#081830] transition-colors flex items-center gap-2.5 shadow-lg shadow-[#0a1e3d]/30 cursor-pointer">
+          <button 
+            onClick={handleSubmit} 
+            disabled={!leaveType || !startDate || !endDate || duration.totalHours <= 0}
+            className="!bg-[#133251] text-white !px-8 !py-4 rounded-full text-[14px] font-bold hover:bg-[#081830] transition-colors flex items-center gap-2.5 shadow-lg shadow-[#0a1e3d]/30 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Submit Request
             <Send size={16} strokeWidth={2.5} />
           </button>

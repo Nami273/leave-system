@@ -105,11 +105,15 @@ router.post("/", verifyToken, async (req, res) => {
     }
 
     const id = uuidv4();
+    let computedStatus = 'pending';
+    if (leave_type_id === 'lt000001-0000-0000-0000-000000000001') {
+      computedStatus = 'acknowledged';
+    }
 
     await pool.query(
       `INSERT INTO leave_requests
          (id, user_id, leave_type_id, start_date, end_date, total_days, reason, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         req.user.id,
@@ -118,6 +122,7 @@ router.post("/", verifyToken, async (req, res) => {
         end_date,
         parsedDays,
         reason ?? null,
+        computedStatus
       ],
     );
 

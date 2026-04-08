@@ -6,6 +6,7 @@ export default function RecentRequests({ requests = [] }) {
     pending: { bg: "#fee481", text: "#6b5413" },
     rejected: { bg: "#f56464", text: "#570008" },
     cancelled: { bg: "#e2e8f0", text: "#475569" },
+    acknowledged: { bg: "#93c5fd", text: "#1e3a8a" },
   }
 
   const getIconData = (typeName) => {
@@ -27,12 +28,17 @@ export default function RecentRequests({ requests = [] }) {
   };
 
   const formatDurationText = (totalDays) => {
-    const days = Math.floor(totalDays);
-    const hours = Math.round((totalDays - days) * 8); 
+    const totalHours = totalDays * 8;
+    const days = Math.floor(totalHours / 8);
+    const remainder = totalHours - (days * 8);
+    const hours = Math.floor(remainder);
+    const minutes = Math.round((remainder - hours) * 60);
+
     const parts = [];
     if (days > 0) parts.push(`${days} Day${days !== 1 ? 's' : ''}`);
-    if (hours > 0) parts.push(`${hours} Hour${hours !== 1 ? 's' : ''}`);
-    return parts.length > 0 ? parts.join(', ') : '0 Days';
+    if (hours > 0 || (days === 0 && minutes === 0)) parts.push(`${hours} Hour${hours !== 1 ? 's' : ''}`);
+    if (minutes > 0) parts.push(`${minutes} Min${minutes !== 1 ? 's' : ''}`);
+    return parts.join(', ');
   };
 
   return (
