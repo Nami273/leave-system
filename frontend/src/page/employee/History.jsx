@@ -1,40 +1,80 @@
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import Header from "../../components/Header"
 import LeaveBalanceCard from "../../components/LeaveBalanceCard"
-
-const CalendarIcon = ({ color }) => (
-  <svg className="w-5 h-5" fill="none" stroke={color} viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-  </svg>
-)
+import { CalendarDays, Umbrella, Users, Thermometer, ChevronLeft, ChevronRight, X } from "lucide-react"
 
 export default function History({ onNavigate }) {
   const [filter, setFilter] = useState("all")
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const [appliedRange, setAppliedRange] = useState(null)
+  const pickerRef = useRef(null)
+
+  // Close picker when clicking outside
+  useEffect(() => {
+    function handleClick(e) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target)) {
+        setShowDatePicker(false)
+      }
+    }
+    if (showDatePicker) document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [showDatePicker])
 
   const filters = ["All", "Approved", "Pending", "Rejected"]
 
   const historyData = [
-    { id: 1, type: "Annual Leave", dates: "Aug 14 - Aug 21, 2024", duration: "5 Days", status: "Approved", reason: "Summer Vacation" },
-    { id: 2, type: "Personal Leave", dates: "Oct 05 - Oct 06, 2024", duration: "2 Days", status: "Pending", reason: "Family Wedding" },
-    { id: 3, type: "Sick Leave", dates: "May 12, 2024", duration: "8 Hr", status: "Rejected", reason: "Get Sick Infected" },
-    { id: 4, type: "Annual Leave", dates: "Mar 20 - Mar 25, 2024", duration: "5 Days", status: "Approved", reason: "Spring Break" }
+    { id: 1, type: "Annual Leave", dates: "Aug 14 - Aug 21, 2024", start: new Date(2024, 7, 14), end: new Date(2024, 7, 21), duration: "5 Days", status: "Approved", reason: "Summer Vacation", submitted: "Aug 10, 2024" },
+    { id: 2, type: "Personal Leave", dates: "Oct 05 - Oct 06, 2024", start: new Date(2024, 9, 5), end: new Date(2024, 9, 6), duration: "2 Days", status: "Pending", reason: "Family Wedding", submitted: "Oct 01, 2024" },
+    { id: 3, type: "Sick Leave", dates: "May 12, 2024", start: new Date(2024, 4, 12), end: new Date(2024, 4, 12), duration: "8 Hr", status: "Rejected", reason: "Get Sick Infected", submitted: "May 12, 2024" },
+    { id: 4, type: "Annual Leave", dates: "Mar 20 - Mar 25, 2024", start: new Date(2024, 2, 20), end: new Date(2024, 2, 25), duration: "5 Days", status: "Approved", reason: "Spring Break", submitted: "Mar 15, 2024" }
   ]
 
   const statusColors = {
-    Approved: { bg: "#dcfce7", text: "#16a34a" },
-    Pending: { bg: "#fef9c3", text: "#ca8a04" },
-    Rejected: { bg: "#fee2e2", text: "#dc2626" }
+    Approved: { bg: "#0cf1aa", text: "#185b48" },
+    Pending: { bg: "#fee481", text: "#6b5413" },
+    Rejected: { bg: "#f56464", text: "#570008" }
   }
 
-  const iconColors = {
-    "Annual Leave": "#7dd3fc",
-    "Personal Leave": "#fcd34d",
-    "Sick Leave": "#fca5a5"
+  const iconData = {
+    "Annual Leave": { Icon: Umbrella, color: "#1982c4", bg: "#e6f2fb" },
+    "Personal Leave": { Icon: Users, color: "#d06ab0", bg: "#f8e0f0" },
+    "Sick Leave": { Icon: Thermometer, color: "#f57a00", bg: "#fff2e5" }
   }
 
-  const filteredData = filter === "all"
+  // Filter by status
+  let filteredData = filter === "all"
     ? historyData
     : historyData.filter(item => item.status.toLowerCase() === filter)
+
+  // Filter by date range
+  if (appliedRange) {
+    const { from, to } = appliedRange
+    filteredData = filteredData.filter(item => {
+      return item.start >= from && item.end <= to
+    })
+  }
+
+  function applyDateRange() {
+    if (startDate && endDate) {
+      setAppliedRange({ from: new Date(startDate), to: new Date(endDate) })
+    }
+    setShowDatePicker(false)
+  }
+
+  function clearDateRange() {
+    setStartDate("")
+    setEndDate("")
+    setAppliedRange(null)
+    setShowDatePicker(false)
+  }
+
+  function formatRange() {
+    if (!appliedRange) return null
+    const opts = { month: "short", day: "numeric", year: "numeric" }
+    return `${appliedRange.from.toLocaleDateString("en-US", opts)} – ${appliedRange.to.toLocaleDateString("en-US", opts)}`
+  }
 
   return (
     <div className="min-h-screen bg-[#eef2f9] flex flex-col">
@@ -54,18 +94,73 @@ export default function History({ onNavigate }) {
           <div className="flex items-center justify-between mb-8 px-2 mt-2">
             <h3 className="font-bold text-[22px] font-fredoka text-[#3f4a51]">Recent Requests</h3>
             <div className="flex gap-6 items-center">
-              <div className="bg-[#f4f7fb] text-[#5e6c7e] px-4 py-2 rounded-xl text-[14px] font-bold flex items-center gap-2 cursor-pointer transition-colors hover:bg-gray-100">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                Select Date Range
+              {/* Date Range Picker */}
+              <div className="relative" ref={pickerRef}>
+                <button
+                  onClick={() => setShowDatePicker(!showDatePicker)}
+                  className={`px-4 py-2 rounded-xl text-[14px] font-bold flex items-center gap-2 cursor-pointer transition-colors ${appliedRange
+                    ? "bg-[#1c355e] text-white"
+                    : "bg-[#f4f7fb] text-[#5e6c7e] hover:bg-gray-100"
+                    }`}
+                >
+                  <CalendarDays size={16} />
+                  {appliedRange ? formatRange() : "Select Date Range"}
+                  {appliedRange && (
+                    <span
+                      onClick={(e) => { e.stopPropagation(); clearDateRange() }}
+                      className="ml-1 hover:opacity-80"
+                    >
+                      <X size={14} />
+                    </span>
+                  )}
+                </button>
+
+                {showDatePicker && (
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-[#e2e8f0] p-5 z-50 w-[320px]">
+                    <p className="text-[11px] font-bold text-[#94a3b8] tracking-widest uppercase mb-3">Date Range</p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[12px] font-bold text-[#3f4a51] mb-1 block">From</label>
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={e => setStartDate(e.target.value)}
+                          className="w-full px-3 py-2.5 rounded-xl border border-[#dde3ec] text-[14px] font-medium text-[#3f4a51] focus:outline-none focus:ring-2 focus:ring-[#1c355e]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[12px] font-bold text-[#3f4a51] mb-1 block">To</label>
+                        <input
+                          type="date"
+                          value={endDate}
+                          onChange={e => setEndDate(e.target.value)}
+                          className="w-full px-3 py-2.5 rounded-xl border border-[#dde3ec] text-[14px] font-medium text-[#3f4a51] focus:outline-none focus:ring-2 focus:ring-[#1c355e]"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={clearDateRange}
+                        className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-[#64748b] !bg-[#f4f7fb] hover:bg-[#eaf0f7] transition-colors"
+                      >Clear</button>
+                      <button
+                        onClick={applyDateRange}
+                        disabled={!startDate || !endDate}
+                        className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-white !bg-[#1c355e] hover:bg-[#162d50] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >Apply</button>
+                    </div>
+                  </div>
+                )}
               </div>
+
               <div className="flex gap-4">
                 {filters.map((f) => (
                   <button
                     key={f}
                     onClick={() => setFilter(f.toLowerCase())}
                     className={`text-[14px] font-bold transition-all relative ${filter === f.toLowerCase()
-                        ? "text-[#3f4a51]"
-                        : "text-[#94a3b8] hover:text-[#5e6c7e]"
+                      ? "text-[#3f4a51]"
+                      : "text-[#94a3b8] hover:text-[#5e6c7e]"
                       }`}
                   >
                     {f}
@@ -91,67 +186,82 @@ export default function History({ onNavigate }) {
                 </tr>
               </thead>
               <tbody className="text-[#3f4a51] font-medium text-[15px]">
-                {filteredData.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#f9fafb] transition-colors rounded-[24px]">
-                    <td className="py-2.5 px-4 rounded-l-[24px]">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className="w-12 h-12 rounded-full flex items-center justify-center border border-white/20"
-                          style={{ backgroundColor: iconColors[item.type] + "22" }}
-                        >
-                          <CalendarIcon color={iconColors[item.type]} />
-                        </div>
-                        <span className="font-bold">{item.type}</span>
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-4 text-[13px]">
-                      <div className="font-bold flex flex-col gap-0.5">
-                        <span>{item.dates}</span>
-                        <span className="text-[11px] text-[#94a3b8] font-medium">Submitted on Jan 01</span>
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-4">
-                      <span className="px-4 py-1.5 bg-[#ecf0f6] text-[#3f4a51] font-bold rounded-full text-[13px] inline-block">
-                        {item.duration}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-4">
-                      <span
-                        className="px-4 py-1.5 rounded-full text-[12px] font-bold tracking-wide inline-block"
-                        style={{
-                          backgroundColor: statusColors[item.status].bg,
-                          color: statusColors[item.status].text
-                        }}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-4 text-[#94a3b8] rounded-r-[24px] text-[13px]">
-                      {item.reason}
+                {filteredData.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-[#94a3b8] text-[15px] font-medium">
+                      No leave requests found for the selected filters.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredData.map((item) => (
+                    <tr key={item.id} className="hover:bg-[#f9fafb] transition-colors rounded-[24px]">
+                      <td className="py-2.5 px-4 rounded-l-[24px]">
+                        <div className="flex items-center gap-4">
+                          {(() => {
+                            const { Icon, color, bg } = iconData[item.type]
+                            return (
+                              <div
+                                className="w-12 h-12 rounded-full flex items-center justify-center"
+                                style={{ backgroundColor: bg }}
+                              >
+                                <Icon size={20} color={color} strokeWidth={2.5} />
+                              </div>
+                            )
+                          })()}
+                          <span className="font-bold">{item.type}</span>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-4 text-[13px]">
+                        <div className="font-bold flex flex-col gap-0.5">
+                          <span>{item.dates}</span>
+                          <span className="text-[11px] text-[#94a3b8] font-medium">Submitted on {item.submitted}</span>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <span className="px-4 py-1.5 bg-[#ecf0f6] text-[#3f4a51] font-bold rounded-full text-[13px] inline-block">
+                          {item.duration}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <span
+                          className="px-4 py-1.5 rounded-full text-[12px] font-bold tracking-wide inline-block"
+                          style={{
+                            backgroundColor: statusColors[item.status].bg,
+                            color: statusColors[item.status].text
+                          }}
+                        >
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-4 text-[#94a3b8] rounded-r-[24px] text-[13px]">
+                        {item.reason}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-8 px-4">
-            <p className="text-[13px] text-[#94a3b8] font-bold">Showing 1-4 of 12 requests</p>
+            <p className="text-[13px] text-[#94a3b8] font-bold">
+              Showing {filteredData.length} of {historyData.length} requests
+            </p>
             <div className="flex gap-2 items-center text-[#94a3b8] font-bold">
-              <svg className="w-4 h-4 cursor-pointer hover:text-[#3f4a51]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              <ChevronLeft size={16} className="cursor-pointer hover:text-[#3f4a51]" />
               {[1, 2, 3].map((page) => (
                 <button
                   key={page}
                   className={`w-8 h-8 rounded-full text-[13px] font-bold transition-all ${page === 1
-                      ? "bg-[#3f4a51] text-white"
-                      : "text-[#94a3b8] hover:bg-gray-100 hover:text-[#3f4a51]"
+                    ? "bg-[#3f4a51] text-white"
+                    : "text-[#94a3b8] hover:bg-gray-100 hover:text-[#3f4a51]"
                     }`}
                 >
                   {page}
                 </button>
               ))}
-              <svg className="w-4 h-4 cursor-pointer hover:text-[#3f4a51]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              <ChevronRight size={16} className="cursor-pointer hover:text-[#3f4a51]" />
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { Umbrella, Folder, Thermometer } from "lucide-react"
+import { Umbrella, Users, Thermometer } from "lucide-react"
 
 export default function RecentRequests() {
   const requests = [
@@ -10,12 +10,12 @@ export default function RecentRequests() {
   const statusStyles = {
     Approved: { bg: "#0cf1aa", text: "#185b48" },
     Pending: { bg: "#fee481", text: "#6b5413" },
-    Rejected: { bg: "#f56464", text: "#ffffff" }
+    Rejected: { bg: "#f56464", text: "#570008" }
   }
 
   const iconData = {
     annual: { Icon: Umbrella, color: "#1982c4", bg: "#e6f2fb" },
-    personal: { Icon: Folder, color: "#d81159", bg: "#fcedf3" }, 
+    personal: { Icon: Users, color: "#d06ab0", bg: "#f8e0f0" },
     sick: { Icon: Thermometer, color: "#f57a00", bg: "#fff2e5" }
   }
 
@@ -34,7 +34,7 @@ export default function RecentRequests() {
           return (
             <div key={req.id} className="flex items-center justify-between p-4 bg-[#f9fafb] rounded-[24px]">
               <div className="flex items-center gap-4">
-                <div 
+                <div
                   className="w-12 h-12 rounded-full flex items-center justify-center p-3"
                   style={{ backgroundColor: bg }}
                 >
@@ -45,11 +45,11 @@ export default function RecentRequests() {
                   <p className="text-[13px] font-medium text-[#94a3b8]">{req.date}</p>
                 </div>
               </div>
-              <span 
+              <span
                 className="px-4 py-1.5 rounded-full text-[12px] font-bold tracking-wide"
-                style={{ 
-                  backgroundColor: statusStyles[req.status].bg, 
-                  color: statusStyles[req.status].text 
+                style={{
+                  backgroundColor: statusStyles[req.status].bg,
+                  color: statusStyles[req.status].text
                 }}
               >
                 {req.status}

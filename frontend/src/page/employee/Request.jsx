@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react"
 import Header from "../../components/Header"
-import { Umbrella, Cross, Users, ChevronLeft, ChevronRight, Upload, X, Send, CalendarDays, FileText } from "lucide-react"
+import { Umbrella, Thermometer, Users, ChevronLeft, ChevronRight, Upload, X, Send, CalendarDays, FileText } from "lucide-react"
 
 /* ──────────────────────── helpers ──────────────────────── */
 
@@ -115,6 +115,17 @@ export default function Request({ onNavigate }) {
   /* reason */
   const [reason, setReason] = useState("")
 
+  /* files */
+  const [files, setFiles] = useState([])
+  function handleFileChange(e) {
+    const newFiles = Array.from(e.target.files)
+    setFiles(prev => [...prev, ...newFiles])
+    e.target.value = ""
+  }
+  function removeFile(index) {
+    setFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
   /* computed step (auto from selections) */
   const currentStep = leaveType ? (startDate && endDate ? 3 : startDate ? 2 : 1) : 1
 
@@ -126,8 +137,8 @@ export default function Request({ onNavigate }) {
 
   /* ─── leave types ─── */
   const leaveTypes = [
-    { id: "annual", label: "Annual Leave", desc: "Personal recharge", Icon: Umbrella, color: "#5ea5d4", bg: "#dbedf9" },
-    { id: "sick", label: "Sick Leave", desc: "Rest & recovery", Icon: Cross, color: "#e06070", bg: "#fce4e8" },
+    { id: "annual", label: "Annual Leave", desc: "Personal recharge", Icon: Umbrella, color: "#1982c4", bg: "#e6f2fb" },
+    { id: "sick", label: "Sick Leave", desc: "Rest & recovery", Icon: Thermometer, color: "#f57a00", bg: "#fff2e5" },
     { id: "personal", label: "Personal", desc: "Family & errands", Icon: Users, color: "#d06ab0", bg: "#f8e0f0" },
   ]
 
@@ -213,8 +224,8 @@ export default function Request({ onNavigate }) {
               <div className="flex flex-col items-center min-w-[80px]">
                 <div
                   className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${currentStep >= s.num
-                      ? "bg-[#1c355e] text-white"
-                      : "bg-[#dde3ec] text-[#94a3b8]"
+                    ? "bg-[#1c355e] text-white"
+                    : "bg-[#dde3ec] text-[#94a3b8]"
                     }`}
                 >
                   {s.num}
@@ -244,8 +255,8 @@ export default function Request({ onNavigate }) {
                   key={id}
                   onClick={() => setLeaveType(id)}
                   className={`w-full p-3.5 rounded-2xl text-left transition-all flex items-center gap-3 ${leaveType === id
-                      ? "bg-[#c6ddf0] ring-2 ring-[#1c355e]"
-                      : "bg-[#f4f7fb] hover:bg-[#eaf0f7]"
+                    ? "bg-[#c6ddf0] ring-2 ring-[#1c355e]"
+                    : "bg-[#f4f7fb] hover:bg-[#eaf0f7]"
                     }`}
                 >
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -305,7 +316,7 @@ export default function Request({ onNavigate }) {
                 } else if (inRange) {
                   cellClass += "bg-[#d6e6f5] text-[#1c355e] "
                 } else if (isToday) {
-                  cellClass += "ring-1 ring-[#1c355e] text-[#1c355e] "
+                  cellClass += "text-[#1c355e] font-extrabold "
                 } else {
                   cellClass += "text-[#3f4a51] hover:bg-[#eef3fa] "
                 }
@@ -317,6 +328,9 @@ export default function Request({ onNavigate }) {
                     onClick={() => handleDayClick(cell.day)}
                   >
                     {cell.day}
+                    {isToday && (
+                      <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#478afb]" />
+                    )}
                   </div>
                 )
               })}
@@ -341,14 +355,14 @@ export default function Request({ onNavigate }) {
                   onChange={e => setStartMin(e.target.value.replace(/\D/g, "").slice(0, 2))}
                   className="w-11 h-10 rounded-lg bg-white border border-[#dde3ec] text-center text-[14px] font-bold text-[#2d3e50] focus:outline-none focus:ring-2 focus:ring-[#1c355e]"
                 />
-                <div className="flex rounded-lg overflow-hidden border border-[#dde3ec]">
+                <div className="flex rounded-xl overflow-hidden border-2 border-[#1c355e]/30">
                   <button
                     onClick={() => setStartAmPm("AM")}
-                    className={`px-2.5 py-2 text-[11px] font-bold transition-colors ${startAmPm === "AM" ? "bg-[#1c355e] text-white" : "bg-white text-[#94a3b8]"}`}
+                    className={`px-5 py-3 text-[14px] font-bold transition-colors ${startAmPm === "AM" ? "bg-[#1c355e] text-white" : "bg-white text-[#3f4a51] hover:bg-[#f0f3f8]"}`}
                   >AM</button>
                   <button
                     onClick={() => setStartAmPm("PM")}
-                    className={`px-2.5 py-2 text-[11px] font-bold transition-colors ${startAmPm === "PM" ? "bg-[#1c355e] text-white" : "bg-white text-[#94a3b8]"}`}
+                    className={`px-5 py-3 text-[14px] font-bold transition-colors ${startAmPm === "PM" ? "bg-[#1c355e] text-white" : "bg-white text-[#3f4a51] hover:bg-[#f0f3f8]"}`}
                   >PM</button>
                 </div>
               </div>
@@ -370,14 +384,14 @@ export default function Request({ onNavigate }) {
                   onChange={e => setEndMin(e.target.value.replace(/\D/g, "").slice(0, 2))}
                   className="w-11 h-10 rounded-lg bg-white border border-[#dde3ec] text-center text-[14px] font-bold text-[#2d3e50] focus:outline-none focus:ring-2 focus:ring-[#1c355e]"
                 />
-                <div className="flex rounded-lg overflow-hidden border border-[#dde3ec]">
+                <div className="flex rounded-xl overflow-hidden border-2 border-[#1c355e]/30">
                   <button
                     onClick={() => setEndAmPm("AM")}
-                    className={`px-2.5 py-2 text-[11px] font-bold transition-colors ${endAmPm === "AM" ? "bg-[#1c355e] text-white" : "bg-white text-[#94a3b8]"}`}
+                    className={`px-5 py-3 text-[14px] font-bold transition-colors ${endAmPm === "AM" ? "bg-[#1c355e] text-white" : "bg-white text-[#3f4a51] hover:bg-[#f0f3f8]"}`}
                   >AM</button>
                   <button
                     onClick={() => setEndAmPm("PM")}
-                    className={`px-2.5 py-2 text-[11px] font-bold transition-colors ${endAmPm === "PM" ? "bg-[#1c355e] text-white" : "bg-white text-[#94a3b8]"}`}
+                    className={`px-5 py-3 text-[14px] font-bold transition-colors ${endAmPm === "PM" ? "bg-[#1c355e] text-white" : "bg-white text-[#3f4a51] hover:bg-[#f0f3f8]"}`}
                   >PM</button>
                 </div>
               </div>
@@ -402,13 +416,39 @@ export default function Request({ onNavigate }) {
             <h3 className="font-bold text-[15px] text-[#3f4a51] mb-5 flex items-center gap-2">
               <CalendarDays size={16} /> Attachments
             </h3>
-            <div className="border-2 border-dashed border-[#dde3ec] rounded-2xl py-10 px-4 text-center hover:bg-[#f9fafb] transition-colors cursor-pointer">
+            <input
+              type="file"
+              id="fileUpload"
+              multiple
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <label
+              htmlFor="fileUpload"
+              className="border-2 border-dashed border-[#dde3ec] rounded-2xl py-10 px-4 text-center hover:bg-[#f9fafb] transition-colors cursor-pointer block"
+            >
               <div className="mx-auto w-12 h-12 bg-[#f0f3f8] rounded-full flex items-center justify-center text-[#94a3b8] mb-3">
                 <Upload size={22} />
               </div>
               <p className="text-[14px] font-bold text-[#3f4a51]">Upload Files</p>
               <p className="text-[12px] text-[#94a3b8] mt-1">Drag files or click to browse</p>
-            </div>
+            </label>
+            {files.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {files.map((file, i) => (
+                  <div key={i} className="flex items-center justify-between bg-[#f4f7fb] rounded-xl px-4 py-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText size={14} className="text-[#64748b] shrink-0" />
+                      <span className="text-[13px] font-medium text-[#3f4a51] truncate">{file.name}</span>
+                      <span className="text-[11px] text-[#94a3b8] shrink-0">({(file.size / 1024).toFixed(1)} KB)</span>
+                    </div>
+                    <button onClick={() => removeFile(i)} className="text-[#f56464] hover:text-red-600 shrink-0 ml-2">
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Reason */}
@@ -431,7 +471,7 @@ export default function Request({ onNavigate }) {
             <X size={18} strokeWidth={2.5} />
             Discard Request
           </button>
-          <button className="bg-[#133251] text-white px-8 py-3.5 rounded-full text-[14px] font-bold hover:bg-[#152a4a] transition-colors flex items-center gap-2.5 shadow-lg shadow-[#1c355e]/20">
+          <button className="!bg-[#133251] text-white !px-8 !py-4 rounded-full text-[14px] font-bold hover:bg-[#081830] transition-colors flex items-center gap-2.5 shadow-lg shadow-[#0a1e3d]/30">
             Submit Request
             <Send size={16} strokeWidth={2.5} />
           </button>
