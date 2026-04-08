@@ -37,7 +37,7 @@ export default function LeaveBalanceCard({ title, used, total, variant }) {
         <p className="text-[15px] font-bold mb-2">{title}</p>
         <div className="flex items-baseline gap-1 mb-8">
           <span className="text-5xl font-bold font-fredoka tracking-wide">
-            {safeUsed === 0 ? "0" : safeUsed < 10 ? `0${safeUsed}` : safeUsed}
+            {safeUsed}
           </span>
           <span className="text-[15px] font-bold opacity-80">/ {safeTotal} days</span>
         </div>

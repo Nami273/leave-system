@@ -121,6 +121,13 @@ router.post("/", verifyToken, async (req, res) => {
       ],
     );
 
+    await pool.query(
+      `UPDATE leave_balances
+       SET used_days = used_days + ?, remaining_days = remaining_days - ?
+       WHERE user_id = ? AND leave_type_id = ? AND year = ?`,
+      [parsedDays, parsedDays, req.user.id, leave_type_id, currentYear]
+    );
+
     const [created] = await pool.query(
       `SELECT lr.*, lt.name AS leave_type_name
        FROM leave_requests lr
@@ -154,7 +161,7 @@ router.put("/:id/cancel", verifyToken, async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      "SELECT id, user_id, status FROM leave_requests WHERE id = ?",
+      "SELECT id, user_id, status, total_days, leave_type_id, start_date FROM leave_requests WHERE id = ?",
       [id],
     );
 
@@ -176,9 +183,18 @@ router.put("/:id/cancel", verifyToken, async (req, res) => {
       });
     }
 
+    const requestYear = new Date(request.start_date).getFullYear();
+
     await pool.query(
       "UPDATE leave_requests SET status = 'cancelled' WHERE id = ?",
       [id],
+    );
+
+    await pool.query(
+      `UPDATE leave_balances
+       SET used_days = used_days - ?, remaining_days = remaining_days + ?
+       WHERE user_id = ? AND leave_type_id = ? AND year = ?`,
+      [request.total_days, request.total_days, request.user_id, request.leave_type_id, requestYear]
     );
 
     await logAction(
@@ -400,20 +416,6 @@ router.put(
         [req.user.id, id],
       );
 
-      await pool.query(
-        `UPDATE leave_balances
-         SET used_days      = used_days      + ?,
-             remaining_days = remaining_days - ?
-         WHERE user_id = ? AND leave_type_id = ? AND year = ?`,
-        [
-          request.total_days,
-          request.total_days,
-          request.user_id,
-          request.leave_type_id,
-          requestYear,
-        ],
-      );
-
       await logAction(
         req.user.id,
         "request_approved",
@@ -468,20 +470,6 @@ router.put(
         [req.user.id, id],
       );
 
-      await pool.query(
-        `UPDATE leave_balances
-         SET used_days      = used_days      + ?,
-             remaining_days = remaining_days - ?
-         WHERE user_id = ? AND leave_type_id = ? AND year = ?`,
-        [
-          request.total_days,
-          request.total_days,
-          request.user_id,
-          request.leave_type_id,
-          requestYear,
-        ],
-      );
-
       await logAction(
         req.user.id,
         "request_approved",
@@ -510,7 +498,7 @@ router.put(
 
     try {
       const [rows] = await pool.query(
-        "SELECT id, user_id, status FROM leave_requests WHERE id = ?",
+        "SELECT id, user_id, status, total_days, leave_type_id, start_date FROM leave_requests WHERE id = ?",
         [id],
       );
 
@@ -526,11 +514,20 @@ router.put(
         });
       }
 
+      const requestYear = new Date(request.start_date).getFullYear();
+
       await pool.query(
         `UPDATE leave_requests
          SET status = 'rejected', approved_by = ?, reject_reason = ?
          WHERE id = ?`,
         [req.user.id, reject_reason ?? null, id],
+      );
+
+      await pool.query(
+        `UPDATE leave_balances
+         SET used_days = used_days - ?, remaining_days = remaining_days + ?
+         WHERE user_id = ? AND leave_type_id = ? AND year = ?`,
+        [request.total_days, request.total_days, request.user_id, request.leave_type_id, requestYear]
       );
 
       await logAction(
