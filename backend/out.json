@@ -1,0 +1,32 @@
+{
+  "balances": [
+    {
+      "user_id": "us000001-0000-0000-0000-000000000003",
+      "year": 2026,
+      "total_days": "6.00",
+      "used_days": "0.00",
+      "remaining_days": "6.00"
+    },
+    {
+      "user_id": "us000001-0000-0000-0000-000000000003",
+      "year": 2026,
+      "total_days": "3.00",
+      "used_days": "0.00",
+      "remaining_days": "3.00"
+    },
+    {
+      "user_id": "us000001-0000-0000-0000-000000000003",
+      "year": 2026,
+      "total_days": "30.00",
+      "used_days": "0.00",
+      "remaining_days": "30.00"
+    }
+  ],
+  "requests": [
+    {
+      "user_id": "us000001-0000-0000-0000-000000000003",
+      "leave_type_id": "lt000001-0000-0000-0000-000000000001",
+      "status": "acknowledged"
+    }
+  ]
+}

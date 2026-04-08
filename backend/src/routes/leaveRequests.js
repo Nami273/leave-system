@@ -202,7 +202,7 @@ router.put("/:id/cancel", verifyToken, async (req, res) => {
 router.get(
   "/team",
   verifyToken,
-  requireRole("Manager", "HR", "Super Admin"),
+  requireRole("Manager", "HR", "Super Admin", "Employee"),
   async (req, res) => {
     try {
       const { status, leave_type_id } = req.query;

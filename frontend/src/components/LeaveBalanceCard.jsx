@@ -22,8 +22,10 @@ export default function LeaveBalanceCard({ title, used, total, variant }) {
     }
   }
 
+  const safeUsed = Number(used) || 0;
+  const safeTotal = Number(total) || 1; 
   const style = variants[variant]
-  const percentage = (used / total) * 100
+  const percentage = (safeUsed / safeTotal) * 100
   const Icon = style.icon
 
   return (
@@ -35,9 +37,9 @@ export default function LeaveBalanceCard({ title, used, total, variant }) {
         <p className="text-[15px] font-bold mb-2">{title}</p>
         <div className="flex items-baseline gap-1 mb-8">
           <span className="text-5xl font-bold font-fredoka tracking-wide">
-            {String(used).padStart(2, "0")}
+            {safeUsed === 0 ? "0" : safeUsed < 10 ? `0${safeUsed}` : safeUsed}
           </span>
-          <span className="text-[15px] font-bold opacity-80">/ {total < 10 ? total : total} {total > 9 ? 'days' : 'days'}</span>
+          <span className="text-[15px] font-bold opacity-80">/ {safeTotal} days</span>
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: style.barBg }}>
           <div

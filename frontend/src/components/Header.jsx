@@ -1,6 +1,8 @@
 import { Bell, Settings, User } from "lucide-react"
+import { useAuth } from "../contexts/AuthContext"
 
 export default function Header({ activePage = "dashboard", onNavigate }) {
+  const { user } = useAuth()
   const navItems = [
     { id: "dashboard", label: "Dashboard" },
     { id: "request", label: "Request" },
@@ -38,8 +40,8 @@ export default function Header({ activePage = "dashboard", onNavigate }) {
           </button>
           <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
             <div className="text-right">
-              <p className="text-[13px] font-bold font-fredoka text-[#1e3450]">Alex Chen</p>
-              <p className="text-[11px] text-[#64748b]">Software Developer</p>
+              <p className="text-[13px] font-bold font-fredoka text-[#1e3450]">{user?.full_name || 'Employee'}</p>
+              <p className="text-[11px] text-[#64748b] capitalize">{user?.role || 'Employee'}</p>
             </div>
             <div className="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center">
               <User size={20} className="text-sky-600" />
