@@ -117,7 +117,7 @@ export default function Reports({ onNavigate }) {
       <main className="max-w-5xl mx-auto px-6 pt-12 w-full flex-grow flex flex-col gap-8">
 
         {/* Title Section */}
-        <div className="mb-213">
+        <div className="mb-8">
           <h1 className="text-[64px] font-fredoka font-bold text-[#1f3747] mb-1">
             Reports Overview
           </h1>
