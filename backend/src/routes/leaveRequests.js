@@ -3,6 +3,19 @@ const { v4: uuidv4 } = require("uuid");
 const pool = require("../db");
 const { verifyToken, requireRole } = require("../middleware/auth");
 const { logAction } = require("../utils/logger");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+// ─── Multer setup ───────────────────────────────────────────────────────────
+const uploadDir = path.join(__dirname, "../../uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (_req, file, cb) => cb(null, `${uuidv4()}${path.extname(file.originalname)}`),
+});
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }); // 10 MB
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /me — Get the current user's own leave requests
@@ -45,7 +58,7 @@ router.get("/me", verifyToken, async (req, res) => {
 // POST / — Submit a new leave request
 // Protected: verifyToken
 // ─────────────────────────────────────────────────────────────────────────────
-router.post("/", verifyToken, async (req, res) => {
+router.post("/", verifyToken, upload.array("files", 10), async (req, res) => {
   const { leave_type_id, start_date, end_date, total_days, reason } = req.body;
 
   if (!leave_type_id || !start_date || !end_date || total_days == null) {
@@ -104,6 +117,20 @@ router.post("/", verifyToken, async (req, res) => {
       });
     }
 
+    // ── Overlap check: reject if any active request covers the same dates ──
+    const [overlaps] = await pool.query(
+      `SELECT id FROM leave_requests
+       WHERE user_id = ?
+         AND status NOT IN ('rejected', 'cancelled')
+         AND start_date <= ? AND end_date >= ?`,
+      [req.user.id, end_date, start_date]
+    );
+    if (overlaps.length > 0) {
+      return res.status(400).json({
+        message: "You already have a leave request that overlaps with the selected dates."
+      });
+    }
+
     const id = uuidv4();
     let computedStatus = 'pending';
     if (leave_type_id === 'lt000001-0000-0000-0000-000000000001') {
@@ -132,6 +159,24 @@ router.post("/", verifyToken, async (req, res) => {
        WHERE user_id = ? AND leave_type_id = ? AND year = ?`,
       [parsedDays, parsedDays, req.user.id, leave_type_id, currentYear]
     );
+
+    // ── Save uploaded files ──────────────────────────────────────────────────
+    if (req.files && req.files.length > 0) {
+      const fileInserts = req.files.map(f => [
+        uuidv4(),
+        id,
+        f.originalname,
+        f.filename,
+        f.mimetype,
+        f.size,
+      ]);
+      await pool.query(
+        `INSERT INTO leave_request_files
+           (id, leave_request_id, original_name, stored_name, mime_type, size_bytes)
+         VALUES ?`,
+        [fileInserts]
+      );
+    }
 
     const [created] = await pool.query(
       `SELECT lr.*, lt.name AS leave_type_name

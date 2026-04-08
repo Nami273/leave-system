@@ -164,16 +164,18 @@ export default function Request({ onNavigate }) {
     if (leaveType === "sick") leaveTypeId = "lt000001-0000-0000-0000-000000000001";
     if (leaveType === "personal") leaveTypeId = "lt000001-0000-0000-0000-000000000002";
 
-    const payload = {
-      leave_type_id: leaveTypeId,
-      start_date: finalStart,
-      end_date: finalEnd,
-      total_days: duration.totalHours / 8,
-      reason: reason || ""
-    };
+    const formData = new FormData();
+    formData.append('leave_type_id', leaveTypeId);
+    formData.append('start_date', finalStart);
+    formData.append('end_date', finalEnd);
+    formData.append('total_days', String(duration.totalHours / 8));
+    formData.append('reason', reason || '');
+    files.forEach(f => formData.append('files', f));
 
     try {
-      await api.post('/leave-requests', payload);
+      await api.post('/leave-requests', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       onNavigate && onNavigate('dashboard');
     } catch (e) {
       console.error(e);
@@ -273,19 +275,19 @@ export default function Request({ onNavigate }) {
                 >
                   {s.num}
                 </div>
-                <span className={`text-[12px] mt-2 font-bold ${currentStep >= s.num ? "text-[#1c355e]" : "text-[#94a3b8]"}`}>
+                <span className={`text-[13px] mt-2 font-bold ${currentStep >= s.num ? "text-[#1c355e]" : "text-[#94a3b8]"}`}>
                   {s.label}
                 </span>
               </div>
               {i < steps.length - 1 && (
-                <div className={`w-28 h-[3px] rounded-full -mt-5 ${currentStep > s.num ? "bg-[#1c355e]" : "bg-[#dde3ec]"}`} />
+                <div className={`w-36 h-[3px] rounded-full -mt-5 ${currentStep > s.num ? "bg-[#1c355e]" : "bg-[#dde3ec]"}`} />
               )}
             </div>
           ))}
         </div>
 
         {/* ── Main Content: 3 columns ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr_210px] gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-6 mb-6">
 
           {/* ← Leave Types */}
           <div className="bg-white rounded-[32px] p-6 shadow-sm self-start">
@@ -407,7 +409,7 @@ export default function Request({ onNavigate }) {
                     START TIME {startDate ? `(${MONTH_NAMES[startDate.getMonth()].slice(0, 3).toUpperCase()} ${startDate.getDate()})` : ""}
                   </p>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center rounded-[10px] px-2 h-[42px] w-[100px] border" style={{ backgroundColor: "#f3f4f6", borderColor: "#ccd5df" }}>
+                    <div className="flex items-center rounded-[10px] px-2 h-[42px] flex-1 border" style={{ backgroundColor: "#f3f4f6", borderColor: "#ccd5df" }}>
                       <select
                         value={startHour}
                         onChange={e => setStartHour(e.target.value)}
@@ -429,7 +431,7 @@ export default function Request({ onNavigate }) {
                     <div className="flex items-center rounded-[10px] p-[3.5px] h-[42px] border" style={{ backgroundColor: "#f3f4f6", borderColor: "#cdd5df" }}>
                       <button
                         onClick={() => setStartAmPm("AM")}
-                        className="w-10 h-full text-[13px] font-bold rounded-[7px] transition-colors flex items-center justify-center cursor-pointer"
+                        className="w-11 h-full text-[13px] font-bold rounded-[7px] transition-colors flex items-center justify-center cursor-pointer"
                         style={{
                           backgroundColor: startAmPm === "AM" ? "#00a2fa" : "transparent",
                           color: startAmPm === "AM" ? "#ffffff" : "#7e8c9b"
@@ -437,7 +439,7 @@ export default function Request({ onNavigate }) {
                       >AM</button>
                       <button
                         onClick={() => setStartAmPm("PM")}
-                        className="w-10 h-full text-[13px] font-bold rounded-[7px] transition-colors flex items-center justify-center cursor-pointer"
+                        className="w-11 h-full text-[13px] font-bold rounded-[7px] transition-colors flex items-center justify-center cursor-pointer"
                         style={{
                           backgroundColor: startAmPm === "PM" ? "#00a2fa" : "transparent",
                           color: startAmPm === "PM" ? "#ffffff" : "#7e8c9b"
@@ -453,7 +455,7 @@ export default function Request({ onNavigate }) {
                     END TIME {endDate ? `(${MONTH_NAMES[endDate.getMonth()].slice(0, 3).toUpperCase()} ${endDate.getDate()})` : ""}
                   </p>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center rounded-[10px] px-2 h-[42px] w-[100px] border" style={{ backgroundColor: "#f3f4f6", borderColor: "#ccd5df" }}>
+                    <div className="flex items-center rounded-[10px] px-2 h-[42px] flex-1 border" style={{ backgroundColor: "#f3f4f6", borderColor: "#ccd5df" }}>
                       <select
                         value={endHour}
                         onChange={e => setEndHour(e.target.value)}
@@ -475,7 +477,7 @@ export default function Request({ onNavigate }) {
                     <div className="flex items-center rounded-[10px] p-[3.5px] h-[42px] border" style={{ backgroundColor: "#f3f4f6", borderColor: "#cdd5df" }}>
                       <button
                         onClick={() => setEndAmPm("AM")}
-                        className="w-10 h-full text-[13px] font-bold rounded-[7px] transition-colors flex items-center justify-center cursor-pointer"
+                        className="w-11 h-full text-[13px] font-bold rounded-[7px] transition-colors flex items-center justify-center cursor-pointer"
                         style={{
                           backgroundColor: endAmPm === "AM" ? "#00a2fa" : "transparent",
                           color: endAmPm === "AM" ? "#ffffff" : "#7e8c9b"
@@ -483,7 +485,7 @@ export default function Request({ onNavigate }) {
                       >AM</button>
                       <button
                         onClick={() => setEndAmPm("PM")}
-                        className="w-10 h-full text-[13px] font-bold rounded-[7px] transition-colors flex items-center justify-center cursor-pointer"
+                        className="w-11 h-full text-[13px] font-bold rounded-[7px] transition-colors flex items-center justify-center cursor-pointer"
                         style={{
                           backgroundColor: endAmPm === "PM" ? "#00a2fa" : "transparent",
                           color: endAmPm === "PM" ? "#ffffff" : "#7e8c9b"
@@ -512,7 +514,7 @@ export default function Request({ onNavigate }) {
           {/* Attachments */}
           <div className="bg-white rounded-[32px] p-6 shadow-sm">
             <h3 className="font-bold text-[15px] text-[#3f4a51] mb-5 flex items-center gap-2">
-              <CalendarDays size={16} /> Attachments
+              <Upload size={16} /> Attachments
             </h3>
             <input
               type="file"
