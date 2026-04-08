@@ -121,6 +121,9 @@ export default function Request({ onNavigate }) {
   /* reason */
   const [reason, setReason] = useState("")
 
+  /* submit error */
+  const [submitError, setSubmitError] = useState("")
+
   /* files */
   const [files, setFiles] = useState([])
   function handleFileChange(e) {
@@ -141,8 +144,9 @@ export default function Request({ onNavigate }) {
   }, [startDate, endDate, startHour, startMin, startAmPm, endHour, endMin, endAmPm, isAllDay])
 
   const handleSubmit = async () => {
-    if (!startDate || !endDate) return alert("Please select dates");
-    if (duration.totalHours <= 0) return alert("Duration must be greater than 0");
+    setSubmitError("");
+    if (!startDate || !endDate) return setSubmitError("Please select dates");
+    if (duration.totalHours <= 0) return setSubmitError("Duration must be greater than 0");
 
     const sDateBase = `${startDate.getFullYear()}-${pad2(startDate.getMonth() + 1)}-${pad2(startDate.getDate())}`;
     const eDateBase = `${endDate.getFullYear()}-${pad2(endDate.getMonth() + 1)}-${pad2(endDate.getDate())}`;
@@ -173,7 +177,7 @@ export default function Request({ onNavigate }) {
       onNavigate && onNavigate('dashboard');
     } catch (e) {
       console.error(e);
-      alert(e.response?.data?.message || "Failed to submit request.");
+      setSubmitError(e.response?.data?.message || "Failed to submit request.");
     }
   }
 
@@ -565,14 +569,22 @@ export default function Request({ onNavigate }) {
             <X size={18} strokeWidth={2.5} />
             Discard Request
           </button>
-          <button 
-            onClick={handleSubmit} 
-            disabled={!leaveType || !startDate || !endDate || duration.totalHours <= 0}
-            className="!bg-[#133251] text-white !px-8 !py-4 rounded-full text-[14px] font-bold hover:bg-[#081830] transition-colors flex items-center gap-2.5 shadow-lg shadow-[#0a1e3d]/30 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Submit Request
-            <Send size={16} strokeWidth={2.5} />
-          </button>
+          
+          <div className="flex items-center gap-4">
+            {submitError && (
+              <span className="text-[#f56464] text-[13px] font-bold">
+                {submitError}
+              </span>
+            )}
+            <button 
+              onClick={handleSubmit} 
+              disabled={!leaveType || !startDate || !endDate || duration.totalHours <= 0}
+              className="!bg-[#133251] text-white !px-8 !py-4 rounded-full text-[14px] font-bold hover:bg-[#081830] transition-colors flex items-center gap-2.5 shadow-lg shadow-[#0a1e3d]/30 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Submit Request
+              <Send size={16} strokeWidth={2.5} />
+            </button>
+          </div>
         </div>
       </main>
     </div>
