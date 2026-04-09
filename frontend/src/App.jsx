@@ -4,7 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import Login from './pages/login/Login'
 import ProtectedRoute from './components/ProtectedRoute'
 import EmployeeApp from './pages/employee/EmployeeApp'
-import SuperAdminApp from './pages/subper_admin/SuperAdminApp'
+import SuperAdminApp from './pages/super_admin/SuperAdminApp'
 
 import './index.css'
 import './App.css'
