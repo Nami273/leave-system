@@ -1,4 +1,5 @@
-import { UserPlus, Briefcase, Lock, Save, ChevronDown } from "lucide-react"
+import { useState } from "react"
+import { UserPlus, Briefcase, Lock, Save, ChevronDown, CheckCircle } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import Header from "../../components/Header"
 
@@ -16,6 +17,49 @@ export default function AddEmployee({ onNavigate }) {
     name: "HR",
     role: "Global HR Manager"
   }
+
+  const [form, setForm] = useState({
+    empId: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    role: 'Employee',
+    position: '',
+    username: '',
+    password: '',
+    confirmPassword: ''
+  })
+
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  const updateField = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  const isFormValid =
+    form.empId.trim() &&
+    form.firstName.trim() &&
+    form.lastName.trim() &&
+    form.email.trim() &&
+    form.phone.trim() &&
+    form.position.trim() &&
+    form.username.trim() &&
+    form.password.trim() &&
+    form.confirmPassword.trim() &&
+    form.password === form.confirmPassword
+
+  const handleSave = () => {
+    if (!isFormValid) return
+    setShowSuccess(true)
+    setTimeout(() => {
+      setShowSuccess(false)
+      navigate('/hr/employee')
+    }, 2000)
+  }
+
+  const inputClass = "w-full bg-[#f4f7f9] rounded-2xl py-4 px-6 text-[15px] text-[#323940] placeholder-[#a6b6c5] border-none outline-none focus:ring-2 focus:ring-[#567278]/20 transition-all"
+  const credInputClass = "w-full bg-white rounded-2xl py-4 px-6 text-[15px] text-[#323940] placeholder-[#a6b6c5] border-none outline-none focus:ring-2 focus:ring-white transition-all shadow-sm"
 
   return (
     <div className="min-h-screen bg-[#eef2f9] flex flex-col font-nunito">
@@ -41,7 +85,7 @@ export default function AddEmployee({ onNavigate }) {
 
         {/* Form Container */}
         <div className="bg-white rounded-[40px] p-10 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-          <form className="flex flex-col gap-10">
+          <form className="flex flex-col gap-10" onSubmit={(e) => e.preventDefault()}>
 
             {/* Personal Identity */}
             <section>
@@ -53,16 +97,16 @@ export default function AddEmployee({ onNavigate }) {
               </div>
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="flex flex-col gap-2">
-                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Employee ID</label>
-                  <input type="text" placeholder="e.g. EMP-2024-001" className="w-full bg-[#f4f7f9] rounded-2xl py-4 px-6 text-[15px] text-[#323940] placeholder-[#a6b6c5] border-none outline-none focus:ring-2 focus:ring-[#567278]/20 transition-all" />
+                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Employee ID <span className="text-red-400">*</span></label>
+                  <input type="text" placeholder="e.g. EMP-2024-001" value={form.empId} onChange={(e) => updateField('empId', e.target.value)} className={inputClass} />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-[13px] font-bold text-[#64748b] ml-1">First Name</label>
-                  <input type="text" placeholder="Enter first name" className="w-full bg-[#f4f7f9] rounded-2xl py-4 px-6 text-[15px] text-[#323940] placeholder-[#a6b6c5] border-none outline-none focus:ring-2 focus:ring-[#567278]/20 transition-all" />
+                  <label className="text-[13px] font-bold text-[#64748b] ml-1">First Name <span className="text-red-400">*</span></label>
+                  <input type="text" placeholder="Enter first name" value={form.firstName} onChange={(e) => updateField('firstName', e.target.value)} className={inputClass} />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Last Name</label>
-                  <input type="text" placeholder="Enter last name" className="w-full bg-[#f4f7f9] rounded-2xl py-4 px-6 text-[15px] text-[#323940] placeholder-[#a6b6c5] border-none outline-none focus:ring-2 focus:ring-[#567278]/20 transition-all" />
+                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Last Name <span className="text-red-400">*</span></label>
+                  <input type="text" placeholder="Enter last name" value={form.lastName} onChange={(e) => updateField('lastName', e.target.value)} className={inputClass} />
                 </div>
               </div>
             </section>
@@ -77,17 +121,17 @@ export default function AddEmployee({ onNavigate }) {
               </div>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2">
-                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Email Address</label>
-                  <input type="email" placeholder="name@company.com" className="w-full bg-[#f4f7f9] rounded-2xl py-4 px-6 text-[15px] text-[#323940] placeholder-[#a6b6c5] border-none outline-none focus:ring-2 focus:ring-[#567278]/20 transition-all" />
+                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Email Address <span className="text-red-400">*</span></label>
+                  <input type="email" placeholder="name@company.com" value={form.email} onChange={(e) => updateField('email', e.target.value)} className={inputClass} />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Phone Number</label>
-                  <input type="tel" placeholder="+1 (555) 000-0000" className="w-full bg-[#f4f7f9] rounded-2xl py-4 px-6 text-[15px] text-[#323940] placeholder-[#a6b6c5] border-none outline-none focus:ring-2 focus:ring-[#567278]/20 transition-all" />
+                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Phone Number <span className="text-red-400">*</span></label>
+                  <input type="tel" placeholder="+1 (555) 000-0000" value={form.phone} onChange={(e) => updateField('phone', e.target.value)} className={inputClass} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-[13px] font-bold text-[#64748b] ml-1">Role</label>
                   <div className="relative">
-                    <select className="w-full bg-[#f4f7f9] rounded-2xl py-4 px-6 text-[15px] text-[#323940] appearance-none border-none outline-none focus:ring-2 focus:ring-[#567278]/20 transition-all cursor-pointer">
+                    <select value={form.role} onChange={(e) => updateField('role', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
                       <option>Employee</option>
                       <option>Admin</option>
                       <option>HR</option>
@@ -96,8 +140,8 @@ export default function AddEmployee({ onNavigate }) {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Position</label>
-                  <input type="text" placeholder="e.g. Senior Developer" className="w-full bg-[#f4f7f9] rounded-2xl py-4 px-6 text-[15px] text-[#323940] placeholder-[#a6b6c5] border-none outline-none focus:ring-2 focus:ring-[#567278]/20 transition-all" />
+                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Position <span className="text-red-400">*</span></label>
+                  <input type="text" placeholder="e.g. Senior Developer" value={form.position} onChange={(e) => updateField('position', e.target.value)} className={inputClass} />
                 </div>
               </div>
             </section>
@@ -112,16 +156,19 @@ export default function AddEmployee({ onNavigate }) {
               </div>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2 md:col-span-2">
-                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Username</label>
-                  <input type="text" placeholder="Choose a unique username" className="w-full bg-white rounded-2xl py-4 px-6 text-[15px] text-[#323940] placeholder-[#a6b6c5] border-none outline-none focus:ring-2 focus:ring-white transition-all shadow-sm" />
+                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Username <span className="text-red-400">*</span></label>
+                  <input type="text" placeholder="Choose a unique username" value={form.username} onChange={(e) => updateField('username', e.target.value)} className={credInputClass} />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Password</label>
-                  <input type="password" placeholder="••••••••" className="w-full bg-white rounded-2xl py-4 px-6 text-[15px] text-[#323940] placeholder-[#a6b6c5] border-none outline-none focus:ring-2 focus:ring-white transition-all shadow-sm tracking-widest" />
+                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Password <span className="text-red-400">*</span></label>
+                  <input type="password" placeholder="••••••••" value={form.password} onChange={(e) => updateField('password', e.target.value)} className={`${credInputClass} tracking-widest`} />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Confirm Password</label>
-                  <input type="password" placeholder="••••••••" className="w-full bg-white rounded-2xl py-4 px-6 text-[15px] text-[#323940] placeholder-[#a6b6c5] border-none outline-none focus:ring-2 focus:ring-white transition-all shadow-sm tracking-widest" />
+                  <label className="text-[13px] font-bold text-[#64748b] ml-1">Confirm Password <span className="text-red-400">*</span></label>
+                  <input type="password" placeholder="••••••••" value={form.confirmPassword} onChange={(e) => updateField('confirmPassword', e.target.value)} className={`${credInputClass} tracking-widest`} />
+                  {form.password && form.confirmPassword && form.password !== form.confirmPassword && (
+                    <p className="text-red-500 text-[12px] font-bold ml-1 mt-1">Passwords do not match</p>
+                  )}
                 </div>
               </div>
             </section>
@@ -139,7 +186,13 @@ export default function AddEmployee({ onNavigate }) {
               </button>
               <button
                 type="button"
-                className="bg-[#dcf5eb] hover:bg-[#c2e4e1] text-[#2c7356] rounded-full px-8 py-4 flex items-center gap-2 font-bold text-[16px] transition-colors shadow-sm"
+                onClick={handleSave}
+                disabled={!isFormValid}
+                className={`rounded-full !px-8 !py-4 flex items-center gap-2 font-bold text-[16px] transition-all shadow-sm ${isFormValid
+                    ? 'text-[#2c7356] cursor-pointer hover:opacity-90'
+                    : 'text-[#94a3b8] cursor-not-allowed opacity-50'
+                  }`}
+                style={{ backgroundColor: isFormValid ? '#dcf5eb' : '#e2e8f0' }}
               >
                 <Save size={18} />
                 Save Employee
@@ -149,6 +202,16 @@ export default function AddEmployee({ onNavigate }) {
           </form>
         </div>
       </main>
+
+      {/* Success Toast */}
+      {showSuccess && (
+        <div className="fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl text-white font-bold text-[15px] animate-in slide-in-from-bottom-4"
+          style={{ backgroundColor: '#2c7356' }}
+        >
+          <CheckCircle size={20} />
+          Employee saved successfully!
+        </div>
+      )}
     </div>
   )
 }
