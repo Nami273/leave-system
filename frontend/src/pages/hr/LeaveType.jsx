@@ -19,6 +19,8 @@ import Header from '../../components/Header'
 
 export default function LeaveType({ onNavigate }) {
   const [isCreating, setIsCreating] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [deleteId, setDeleteId] = useState(null)
 
   const adminNavItems = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -130,18 +132,74 @@ export default function LeaveType({ onNavigate }) {
     }
   }
 
-  const handleCreate = () => {
-    const newLeave = {
-      id: Date.now(),
-      name: form.name || 'Untitled Leave',
-      quota: form.days || 0,
-      description: form.description || 'No description provided.',
-      colorType: form.color || 'blue',
-      icon: getIconComponent(form.icon)
+  const getIconName = (IconComponent) => {
+    switch (IconComponent) {
+      case Umbrella: return 'umbrella'
+      case Thermometer: return 'thermometer'
+      case Users: return 'user'
+      case Plane: return 'plane'
+      case Smile: return 'smile'
+      case HeartHandshake: return 'heart'
+      case PartyPopper: return 'party'
+      case MoreHorizontal: return 'more'
+      default: return 'umbrella'
+    }
+  }
+
+  const handleDelete = (id) => {
+    setDeleteId(id)
+  }
+
+  const confirmDelete = () => {
+    if (deleteId) {
+      setLeaveTypes(leaveTypes.filter(leave => leave.id !== deleteId))
+      setDeleteId(null)
+    }
+  }
+
+  const handleEdit = (leave) => {
+    setForm({
+      name: leave.name,
+      description: leave.description,
+      days: leave.quota,
+      service: '', // default empty
+      icon: getIconName(leave.icon),
+      color: leave.colorType,
+      reqManager: true,
+      carryover: false,
+      reqAttachment: false
+    })
+    setEditingId(leave.id)
+    setIsCreating(true)
+  }
+
+  const handleSubmit = () => {
+    if (editingId) {
+      setLeaveTypes(leaveTypes.map(leave =>
+        leave.id === editingId ? {
+          ...leave,
+          name: form.name || 'Untitled Leave',
+          quota: form.days || 0,
+          description: form.description || 'No description provided.',
+          colorType: form.color || 'blue',
+          icon: getIconComponent(form.icon)
+        } : leave
+      ))
+    } else {
+      const newLeave = {
+        id: Date.now(),
+        name: form.name || 'Untitled Leave',
+        quota: form.days || 0,
+        description: form.description || 'No description provided.',
+        colorType: form.color || 'blue',
+        icon: getIconComponent(form.icon)
+      }
+      setLeaveTypes([...leaveTypes, newLeave])
     }
 
-    setLeaveTypes([...leaveTypes, newLeave])
+
     setIsCreating(false)
+    setEditingId(null)
 
     // Reset form for next time
     setForm({
@@ -199,10 +257,10 @@ export default function LeaveType({ onNavigate }) {
                         <Icon size={24} className={colors.iconColor} />
                       </div>
                       <div className="flex gap-2">
-                        <button className={`w-8 h-8 rounded-full flex items-center justify-center ${colors.btnBg} hover:opacity-80 transition-opacity`}>
+                        <button onClick={() => handleEdit(leave)} className={`w-8 h-8 rounded-full flex items-center justify-center ${colors.btnBg} hover:opacity-80 transition-opacity`}>
                           <Edit2 size={14} className={colors.iconColor} />
                         </button>
-                        <button className={`w-8 h-8 rounded-full flex items-center justify-center ${colors.btnBg} hover:opacity-80 transition-opacity`}>
+                        <button onClick={() => handleDelete(leave.id)} className={`w-8 h-8 rounded-full flex items-center justify-center ${colors.btnBg} hover:opacity-80 transition-opacity`}>
                           <Trash2 size={14} className={colors.iconColor} />
                         </button>
                       </div>
@@ -242,7 +300,7 @@ export default function LeaveType({ onNavigate }) {
         ) : (
           <div className="bg-white rounded-[40px] p-10 max-w-[850px] mx-auto shadow-sm">
             <h2 className="text-[32px] font-fredoka font-bold text-[#1f3747] mb-2 leading-tight">
-              Create New Leave Type
+              {editingId ? 'Edit Leave Type' : 'Create New Leave Type'}
             </h2>
             <p className="text-[#64748b] text-[15px] font-medium mb-10">
               Define a new category of balance for your team.
@@ -375,15 +433,21 @@ export default function LeaveType({ onNavigate }) {
 
             <div className="flex items-center gap-4 mt-10">
               <button
-                onClick={handleCreate}
+                onClick={handleSubmit}
                 className="!bg-[#d1ebdf] text-[#265345] !px-8 !py-4 rounded-full font-bold hover:!bg-[#b0dccc] transition-colors"
                 style={{ fontSize: '18px' }}
               >
-                Create Leave Type
+                {editingId ? 'Save Changes' : 'Create Leave Type'}
               </button>
 
               <button
-                onClick={() => setIsCreating(false)}
+                onClick={() => {
+                  setIsCreating(false)
+                  setEditingId(null)
+                  setForm({
+                    name: '', description: '', days: '', service: '', icon: 'umbrella', color: 'blue', reqManager: true, carryover: false, reqAttachment: false
+                  })
+                }}
                 className="!bg-gray-800 text-white !px-8 !py-4 rounded-full font-bold hover:bg-blue-700 transition-colors"
                 style={{ fontSize: '18px' }}
               >
@@ -393,6 +457,37 @@ export default function LeaveType({ onNavigate }) {
           </div>
         )}
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1f3747]/40 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-[32px] p-8 max-w-sm w-full mx-6 shadow-2xl flex flex-col items-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-[#ffe2e5] rounded-full flex items-center justify-center mb-6">
+              <Trash2 size={24} className="text-[#f05252]" />
+            </div>
+            <h3 className="text-[24px] font-fredoka font-bold text-[#1f3747] text-center mb-2">Delete Policy?</h3>
+            <p className="text-[#64748b] text-[15px] text-center mb-8 font-medium">
+              This action cannot be undone. Are you sure you want to completely remove this leave type?
+            </p>
+            <div className="flex gap-4 w-full">
+              <button
+                onClick={() => setDeleteId(null)}
+                className="flex-1 !py-3.5 !px-4 !bg-[#e9eff5] hover:bg-[#dce4ec] text-[#4c6367] rounded-full font-bold transition-colors"
+                style={{ fontSize: '15px' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 !py-3.5 !px-4 !bg-[#f05252] hover:bg-[#d64545] text-white rounded-full font-bold transition-colors shadow-sm"
+                style={{ fontSize: '15px' }}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

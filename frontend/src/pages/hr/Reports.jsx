@@ -11,6 +11,8 @@ export default function Reports({ onNavigate }) {
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [appliedRange, setAppliedRange] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 4
   const pickerRef = useRef(null)
 
   // Close picker when clicking outside
@@ -84,6 +86,17 @@ export default function Reports({ onNavigate }) {
       return item.start >= from && item.end <= to
     })
   }
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filter, appliedRange])
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1
+  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+  const startItem = filteredData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1
+  const endItem = Math.min(currentPage * itemsPerPage, filteredData.length)
 
   function applyDateRange() {
     if (startDate && endDate) {
@@ -330,7 +343,7 @@ export default function Reports({ onNavigate }) {
                     </td>
                   </tr>
                 ) :
-                  filteredData.map((hist) => {
+                  paginatedData.map((hist) => {
                     const { Icon, color, bg } = iconData[hist.icon];
 
                     const statusTheme = {
@@ -393,14 +406,19 @@ export default function Reports({ onNavigate }) {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4 px-6 border-t border-[#f1f5f9] pt-6">
             <p className="text-[13px] text-[#94a3b8] font-bold">
-              Showing {filteredData.length > 0 ? 1 : 0}-{filteredData.length > 4 ? 4 : filteredData.length} of {filteredData.length} requests
+              Showing {startItem}-{endItem} of {filteredData.length} requests
             </p>
             <div className="flex gap-2 items-center text-[#94a3b8] font-bold">
-              <ChevronLeft size={16} className="cursor-pointer hover:text-[#3f4a51]" />
-              {[1, 2, 3].map((page) => (
+              <ChevronLeft 
+                size={16} 
+                className={`cursor-pointer hover:text-[#3f4a51] ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              />
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
-                  className={`w-8 h-8 rounded-full text-[13px] font-bold transition-all ${page === 1
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded-full text-[13px] font-bold transition-all ${page === currentPage
                     ? "bg-[#323940] text-white"
                     : "text-[#94a3b8] hover:bg-gray-100 hover:text-[#323940]"
                     }`}
@@ -408,7 +426,11 @@ export default function Reports({ onNavigate }) {
                   {page}
                 </button>
               ))}
-              <ChevronRight size={16} className="cursor-pointer hover:text-[#3f4a51]" />
+              <ChevronRight 
+                size={16} 
+                className={`cursor-pointer hover:text-[#3f4a51] ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              />
             </div>
           </div>
         </div>

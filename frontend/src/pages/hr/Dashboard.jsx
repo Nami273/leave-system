@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Calendar, Users, CalendarDays, CheckSquare } from "lucide-react"
 import Header from "../../components/Header"
 
@@ -13,6 +14,19 @@ export default function Dashboard({ onNavigate }) {
     name: "HR",
     role: "Global HR Manager"
   }
+
+  const [showAllEmployees, setShowAllEmployees] = useState(false)
+
+  const employeeList = [
+    { id: 1, name: "Marcus Chen", role: "Software Engineer", status: "Active", img: "11", theme: { bg: "bg-[#b4eed3]", text: "text-[#3e8964]" } },
+    { id: 2, name: "Elena Rodriguez", role: "Product Designer", status: "On Leave", img: "5", theme: { bg: "bg-[#f0c3ae]", text: "text-[#a65d38]" } },
+    { id: 3, name: "James Wilson", role: "Account Manager", status: "Active", img: "8", theme: { bg: "bg-[#b4eed3]", text: "text-[#3e8964]" } },
+    { id: 4, name: "Sarah Connor", role: "Marketing Director", status: "Active", img: "9", theme: { bg: "bg-[#b4eed3]", text: "text-[#3e8964]" } },
+    { id: 5, name: "John Doe", role: "HR Specialist", status: "On Leave", img: "12", theme: { bg: "bg-[#f0c3ae]", text: "text-[#a65d38]" } },
+    { id: 6, name: "Amanda Smith", role: "Sales Lead", status: "Active", img: "1", theme: { bg: "bg-[#b4eed3]", text: "text-[#3e8964]" } }
+  ]
+
+  const displayedEmployees = showAllEmployees ? employeeList : employeeList.slice(0, 3)
 
   return (
     <div className="min-h-screen bg-[#eef2f9] flex flex-col font-nunito">
@@ -70,50 +84,34 @@ export default function Dashboard({ onNavigate }) {
           <div className="bg-white rounded-[40px] p-8 shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <h3 className="font-bold text-[22px] font-fredoka text-[#1f3747] tracking-wide">Employee Directory</h3>
-              <button className="text-[14px] font-bold text-[#3ea8e5] hover:text-[#2d8abf] transition-colors">View All</button>
+              <button
+                onClick={() => setShowAllEmployees(!showAllEmployees)}
+                className="text-[14px] font-bold text-[#3ea8e5] hover:text-[#2d8abf] transition-colors"
+              >
+                {showAllEmployees ? 'Show Less' : 'View All'}
+              </button>
             </div>
 
-            <div className="space-y-4">
-              {/* Person 1 */}
-              <div className="flex items-center justify-between p-4 bg-[#f4f7f9] rounded-[24px]">
-                <div className="flex items-center gap-4">
-                  <img src="https://i.pravatar.cc/150?img=11" className="w-12 h-12 rounded-full object-cover shadow-sm" alt="Marcus Chen" />
-                  <div>
-                    <p className="font-bold text-[16px] text-[#1f3747] mb-0.5 font-fredoka">Marcus Chen</p>
-                    <p className="text-[12px] font-medium text-[#7a8c98]">Software Engineer</p>
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+              {displayedEmployees.map((emp) => (
+                <div key={emp.id} className="flex items-center justify-between p-4 bg-[#f4f7f9] rounded-[24px]">
+                  <div className="flex items-center gap-4">
+                    <img src={`https://i.pravatar.cc/150?img=${emp.img}`} className="w-12 h-12 rounded-full object-cover shadow-sm" alt={emp.name} />
+                    <div>
+                      <p className="font-bold text-[16px] text-[#1f3747] mb-0.5 font-fredoka">{emp.name}</p>
+                      <p className="text-[12px] font-medium text-[#7a8c98]">{emp.role}</p>
+                    </div>
                   </div>
+                  <span className={`px-3 py-1 ${emp.theme.bg} ${emp.theme.text} text-[11px] font-bold rounded-full uppercase tracking-wider`}>
+                    {emp.status}
+                  </span>
                 </div>
-                <span className="px-3 py-1 bg-[#b4eed3] text-[#3e8964] text-[11px] font-bold rounded-full uppercase tracking-wider">Active</span>
-              </div>
-
-              {/* Person 2 */}
-              <div className="flex items-center justify-between p-4 bg-[#f4f7f9] rounded-[24px]">
-                <div className="flex items-center gap-4">
-                  <img src="https://i.pravatar.cc/150?img=5" className="w-12 h-12 rounded-full object-cover shadow-sm" alt="Elena Rodriguez" />
-                  <div>
-                    <p className="font-bold text-[16px] text-[#1f3747] mb-0.5 font-fredoka">Elena Rodriguez</p>
-                    <p className="text-[12px] font-medium text-[#7a8c98]">Product Designer</p>
-                  </div>
-                </div>
-                <span className="px-3 py-1 bg-[#f0c3ae] text-[#a65d38] text-[11px] font-bold rounded-full uppercase tracking-wider">On Leave</span>
-              </div>
-
-              {/* Person 3 */}
-              <div className="flex items-center justify-between p-4 bg-[#f4f7f9] rounded-[24px]">
-                <div className="flex items-center gap-4">
-                  <img src="https://i.pravatar.cc/150?img=8" className="w-12 h-12 rounded-full object-cover shadow-sm" alt="James Wilson" />
-                  <div>
-                    <p className="font-bold text-[16px] text-[#1f3747] mb-0.5 font-fredoka">James Wilson</p>
-                    <p className="text-[12px] font-medium text-[#7a8c98]">Account Manager</p>
-                  </div>
-                </div>
-                <span className="px-3 py-1 bg-[#b4eed3] text-[#3e8964] text-[11px] font-bold rounded-full uppercase tracking-wider">Active</span>
-              </div>
+              ))}
             </div>
           </div>
 
           {/* Leave Trends */}
-          <div className="bg-white rounded-[40px] p-8 shadow-sm flex flex-col h-full">
+          <div className="bg-white rounded-[40px] p-8 shadow-sm flex flex-col min-h-[400px] self-start w-full">
             <h3 className="font-bold text-[22px] font-fredoka text-[#1f3747] tracking-wide mb-1">Leave Trends</h3>
             <p className="text-[13px] font-medium text-[#7a8c98] mb-8">Monthly volume by request type</p>
 
@@ -135,7 +133,7 @@ export default function Dashboard({ onNavigate }) {
                       {item.value} days
                     </div>
                     {/* Bar */}
-                    <div 
+                    <div
                       className="w-10 bg-[#006dae] rounded-t-[8px] hover:bg-[#3ea8e5] transition-colors"
                       style={{ height: item.height }}
                     ></div>
