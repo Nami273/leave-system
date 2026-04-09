@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import Login from './pages/login/Login'
 import ProtectedRoute from './components/ProtectedRoute'
 import EmployeeApp from './pages/employee/EmployeeApp'
+import SuperAdminApp from './pages/subper_admin/SuperAdminApp'
 
 import './index.css'
 import './App.css'
@@ -24,8 +25,11 @@ export default function App() {
             </ProtectedRoute>
           } />
 
+          {/* Super Admin pages */}
+          <Route path="/superadmin/*" element={<SuperAdminApp />} />
+
           {/* Root redirect */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Navigate to="/superadmin/dashboard" replace />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/login" replace />} />
