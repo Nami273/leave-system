@@ -36,10 +36,14 @@ export default function App() {
           } />
 
           {/* hr pages */}
-          <Route path="/hr/*" element={<HrApp />} />
+          <Route path="/hr/*" element={
+            <ProtectedRoute allowedRoles={["HR"]}>
+              <HrApp />
+            </ProtectedRoute>
+          } />
 
           {/* Root redirect */}
-          <Route path="/" element={<Navigate to="/hr/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/login" replace />} />

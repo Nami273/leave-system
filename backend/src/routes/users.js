@@ -349,6 +349,122 @@ router.get(
   },
 );
 
+router.get(
+  "/employees-summary",
+  verifyToken,
+  requireRole("HR", "Super Admin"),
+  async (_req, res) => {
+    try {
+      const currentYear = new Date().getFullYear();
+
+      const [rows] = await pool.query(
+        `SELECT
+           u.id,
+           u.username,
+           u.full_name,
+           u.email,
+           u.hire_date,
+           u.is_active,
+           u.created_at,
+           u.updated_at,
+           u.role_id,
+           r.name AS role,
+           u.position_id,
+           p.name AS position,
+           COALESCE(SUM(lb.total_days), 0) AS total_leave_quota,
+           COALESCE(SUM(lb.used_days), 0) AS used_leave_quota,
+           COALESCE(SUM(lb.remaining_days), 0) AS remaining_leave_quota
+         FROM users u
+         JOIN roles r ON u.role_id = r.id
+         JOIN positions p ON u.position_id = p.id
+         LEFT JOIN leave_balances lb
+           ON lb.user_id = u.id
+          AND lb.year = ?
+         WHERE u.deleted_at IS NULL
+           AND r.name = 'Employee'
+         GROUP BY
+           u.id,
+           u.username,
+           u.full_name,
+           u.email,
+           u.hire_date,
+           u.is_active,
+           u.created_at,
+           u.updated_at,
+           u.role_id,
+           r.name,
+           u.position_id,
+           p.name
+         ORDER BY u.full_name ASC`,
+        [currentYear],
+      );
+
+      res.json({ year: currentYear, users: rows });
+    } catch (err) {
+      console.error("GET /users/employees-summary error:", err);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  },
+);
+
+router.get(
+  "/:id",
+  verifyToken,
+  requireRole("HR", "Super Admin"),
+  async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const [rows] = await pool.query(
+        `SELECT ${USER_SELECT}
+       FROM   users u
+       ${USER_JOINS}
+       WHERE  u.id = ?
+         AND  u.deleted_at IS NULL`,
+        [id],
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      res.json({ user: rows[0] });
+    } catch (err) {
+      console.error("GET /users/:id error:", err);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  },
+);
+
+router.get(
+  "/:id",
+  verifyToken,
+  requireRole("HR", "Super Admin"),
+  async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const [rows] = await pool.query(
+        `SELECT ${USER_SELECT}
+       FROM   users u
+       ${USER_JOINS}
+       WHERE  u.id = ?
+         AND  u.deleted_at IS NULL`,
+        [id],
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      res.json({ user: rows[0] });
+    } catch (err) {
+      console.error("GET /users/:id error:", err);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  },
+);
+
 // ─── 6. PUT /:id ──────────────────────────────────────────────────────────────
 // Update any user's info.
 // Allowed fields: full_name, email, username, role_id, position_id, hire_date, is_active.
