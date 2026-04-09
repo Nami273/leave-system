@@ -337,6 +337,97 @@ router.get(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /:id — Get a single leave request with full detail (for manager view)
+// Protected: Manager, HR, Super Admin
+// ─────────────────────────────────────────────────────────────────────────────
+router.get(
+  "/:id",
+  verifyToken,
+  requireRole("HR", "Manager", "Super Admin"),
+  async (req, res) => {
+    const { id } = req.params;
+    try {
+      // 1. Main request + employee profile
+      const [rows] = await pool.query(
+        `SELECT
+           lr.id,
+           lr.user_id,
+           u.full_name,
+           u.email,
+           u.hire_date,
+           u.position_id,
+           p.name        AS position,
+           lr.leave_type_id,
+           lt.name       AS leave_type_name,
+           lr.start_date,
+           lr.end_date,
+           lr.total_days,
+           lr.reason,
+           lr.status,
+           lr.approved_by,
+           approver.full_name AS approved_by_name,
+           lr.reject_reason,
+           lr.submitted_at,
+           lr.updated_at
+         FROM leave_requests lr
+         JOIN      users       u        ON lr.user_id       = u.id
+         LEFT JOIN positions   p        ON u.position_id    = p.id
+         JOIN      leave_types lt       ON lr.leave_type_id = lt.id
+         LEFT JOIN users       approver ON lr.approved_by   = approver.id
+         WHERE lr.id = ?`,
+        [id]
+      );
+      if (rows.length === 0) return res.status(404).json({ message: "Leave request not found." });
+      const request = rows[0];
+
+      // 2. Attached files
+      const [files] = await pool.query(
+        `SELECT id, original_name, stored_name, mime_type, size_bytes
+         FROM leave_request_files WHERE leave_request_id = ?`,
+        [id]
+      );
+
+      // 3. Previous requests by the same employee (last 5, excluding this one)
+      const [history] = await pool.query(
+        `SELECT
+           lr.id,
+           lt.name   AS leave_type_name,
+           lr.start_date,
+           lr.end_date,
+           lr.total_days,
+           lr.status,
+           lr.submitted_at
+         FROM leave_requests lr
+         JOIN leave_types lt ON lr.leave_type_id = lt.id
+         WHERE lr.user_id = ? AND lr.id != ?
+         ORDER BY lr.submitted_at DESC
+         LIMIT 5`,
+        [request.user_id, id]
+      );
+
+      // 4. Leave balance for this leave type
+      const [balance] = await pool.query(
+        `SELECT lb.used_days, lb.total_days
+         FROM leave_balances lb
+         WHERE lb.user_id = ? AND lb.leave_type_id = ?
+           AND lb.year = YEAR(NOW())`,
+        [request.user_id, request.leave_type_id]
+      );
+
+      res.json({
+        request,
+        files,
+        history,
+        balance: balance[0] || null,
+      });
+    } catch (err) {
+      console.error("GET /:id error:", err);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET / — Get all leave requests (admin/management view)
 // Protected: HR, Manager, Super Admin
 // Query params: ?status=pending|approved|rejected|cancelled  ?user_id=xxx
