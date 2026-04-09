@@ -7,7 +7,6 @@ import EmployeeApp from './pages/employee/EmployeeApp'
 import SuperAdminApp from './pages/super_admin/SuperAdminApp'
 
 import './index.css'
-import './App.css'
 
 /* ── App ──────────────────────────────────────────────────────────────── */
 export default function App() {
