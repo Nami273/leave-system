@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
+import { useNavigate } from "react-router-dom"
 import ManagerHeader from "./ManagerHeader"
 import api from "../../services/api"
 import {
@@ -261,6 +262,7 @@ function RejectModal({ request, onConfirm, onCancel, loading }) {
 
 // ─── Request Card ─────────────────────────────────────────────────────────────
 function RequestCard({ req, onApprove, onReject, onAcknowledge }) {
+  const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
   const [actionLoading, setActionLoading] = useState(null)
   const [showRejectModal, setShowRejectModal] = useState(false)
@@ -434,14 +436,14 @@ function RequestCard({ req, onApprove, onReject, onAcknowledge }) {
                 </button>
               )}
 
-              <a
-                href="#"
-                className="flex items-center gap-1.5 ml-auto text-[13px] font-[800] text-[#478afb] hover:text-[#1c355e] transition-colors"
-                onClick={e => e.preventDefault()}
+              <button
+                onClick={() => navigate(`/manager/requests/${req.id}`)}
+                className="flex items-center gap-1.5 ml-auto text-[13px] font-[800] text-[#478afb] hover:text-[#1c355e] transition-colors cursor-pointer"
+                style={{ background: 'none', border: 'none' }}
               >
                 <ExternalLink size={14} strokeWidth={2.5} />
                 View Details
-              </a>
+              </button>
             </div>
           </div>
         )}
