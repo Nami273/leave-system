@@ -505,9 +505,9 @@ router.put(
 
       const request = rows[0];
 
-      if (request.status !== "pending") {
+      if (request.status !== "pending" && request.status !== "acknowledged") {
         return res.status(400).json({
-          message: `Only pending requests can be approved. Current status: '${request.status}'.`,
+          message: `Only pending or acknowledged requests can be approved. Current status: '${request.status}'.`,
         });
       }
 
