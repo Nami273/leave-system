@@ -2,12 +2,14 @@ import { useState, useRef, useEffect } from "react"
 import Header from "../../components/Header"
 import { CalendarDays, Umbrella, Users, Thermometer, ChevronLeft, ChevronRight, X } from "lucide-react"
 import api from "../../services/api"
+import { useNavigate } from "react-router-dom"
 
 function isSameDay(a, b) {
   return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
 
 export default function History({ onNavigate }) {
+  const navigate = useNavigate()
   const [filter, setFilter] = useState("all")
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [startDate, setStartDate] = useState("")
@@ -271,7 +273,11 @@ export default function History({ onNavigate }) {
                     </tr>
                   ) : (
                     paginatedData.map((item) => (
-                      <tr key={item.id} className="hover:bg-[#f9fafb] transition-colors rounded-[24px]">
+                      <tr 
+                        key={item.id} 
+                        className="hover:bg-[#f9fafb] transition-colors rounded-[24px] cursor-pointer"
+                        onClick={() => navigate(`/employee/requests/${item.id}`)}
+                      >
                         <td className="py-2.5 px-4 rounded-l-[24px]">
                           <div className="flex items-center gap-4">
                             {(() => {

@@ -337,13 +337,13 @@ router.get(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET /:id — Get a single leave request with full detail (for manager view)
-// Protected: Manager, HR, Super Admin
+// GET /:id — Get a single leave request with full detail
+// Protected: Employee, Manager, HR, Super Admin
 // ─────────────────────────────────────────────────────────────────────────────
 router.get(
   "/:id",
   verifyToken,
-  requireRole("HR", "Manager", "Super Admin"),
+  requireRole("Employee", "HR", "Manager", "Super Admin"),
   async (req, res) => {
     const { id } = req.params;
     try {
@@ -354,6 +354,7 @@ router.get(
            lr.user_id,
            u.full_name,
            u.email,
+           u.phone,
            u.hire_date,
            u.position_id,
            p.name        AS position,
@@ -379,6 +380,10 @@ router.get(
       );
       if (rows.length === 0) return res.status(404).json({ message: "Leave request not found." });
       const request = rows[0];
+
+      if (req.user.role === "Employee" && request.user_id !== req.user.id) {
+        return res.status(403).json({ message: "You don't have permission to view this request." });
+      }
 
       // 2. Attached files
       const [files] = await pool.query(
@@ -680,6 +685,71 @@ router.put(
       res.json({ message: "Leave request rejected successfully." });
     } catch (err) {
       console.error("Reject leave request error:", err);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  },
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /:id/cancel — Cancel a pending leave request (by owner)
+// Protected: Employee
+// ─────────────────────────────────────────────────────────────────────────────
+router.put(
+  "/:id/cancel",
+  verifyToken,
+  requireRole("Employee"),
+  async (req, res) => {
+    const { id } = req.params;
+    const { cancel_reason } = req.body;
+
+    try {
+      const [rows] = await pool.query(
+        "SELECT id, user_id, status, total_days, leave_type_id, start_date FROM leave_requests WHERE id = ?",
+        [id],
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ message: "Leave request not found." });
+      }
+
+      const request = rows[0];
+
+      if (request.user_id !== req.user.id) {
+        return res.status(403).json({ message: "You don't have permission to cancel this request." });
+      }
+
+      if (request.status !== "pending") {
+        return res.status(400).json({
+          message: `Only pending requests can be cancelled. Current status: '${request.status}'.`,
+        });
+      }
+
+      const requestYear = new Date(request.start_date).getFullYear();
+
+      await pool.query(
+        `UPDATE leave_requests
+         SET status = 'cancelled', reject_reason = ?
+         WHERE id = ?`,
+        [cancel_reason || "Cancelled by user", id],
+      );
+
+      // Restore balance
+      await pool.query(
+        `UPDATE leave_balances
+         SET used_days = used_days - ?, remaining_days = remaining_days + ?
+         WHERE user_id = ? AND leave_type_id = ? AND year = ?`,
+        [request.total_days, request.total_days, request.user_id, request.leave_type_id, requestYear]
+      );
+
+      await logAction(
+        req.user.id,
+        "request_cancelled",
+        `Leave request ${id} cancelled by user ${req.user.id}.`,
+      );
+
+      res.json({ message: "Leave request cancelled successfully." });
+    } catch (err) {
+      console.error("Cancel leave request error:", err);
       res.status(500).json({ message: "Internal server error." });
     }
   },

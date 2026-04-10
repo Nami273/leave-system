@@ -25,8 +25,10 @@ export default function Header({
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <nav className="flex items-center gap-8">
-          {navItems.map((item) => (
+        <div className="flex items-center gap-10">
+          <img src="/logo.png" alt="Logo" className="h-9 w-auto object-contain" />
+          <nav className="flex items-center gap-8">
+            {navItems.map((item) => (
             <div key={item.id} className="relative group">
               <button
                 onClick={() => onNavigate && onNavigate(item.id)}
@@ -42,7 +44,8 @@ export default function Header({
               )}
             </div>
           ))}
-        </nav>
+          </nav>
+        </div>
         <div className="flex items-center gap-4">
           <button className="relative p-2 hover:bg-gray-100 rounded-lg">
             <Bell size={20} className="text-gray-500" />
