@@ -4,7 +4,7 @@ import api from "../../services/api"
 import { ShieldAlert, User, KeyRound, Save, BadgeCheck, Bell, Smartphone, Lock } from "lucide-react"
 
 export default function Settings({ onNavigate, HeaderComponent }) {
-  const { user, login } = useAuth()
+  const { user, updateUser } = useAuth()
   
   // States
   const [activeTab, setActiveTab] = useState("profile")
@@ -33,10 +33,8 @@ export default function Settings({ onNavigate, HeaderComponent }) {
     try {
       const res = await api.put("/users/me", profileData)
       setSuccessMsg("Profile updated successfully!")
-      // Update AuthContext user
-      login(res.data.user.token) // If your api sends newly signed token OR we just rely on refresh, wait!
-      // The backend /me returns { message, user }. Actually, AuthContext handles tokens differently.
-      // Often you need to fetch /me again. For now, it's ok.
+      // Update local context
+      updateUser(res.data.user)
     } catch (err) {
       setErrMsg(err.response?.data?.message || "Failed to update profile.")
     }

@@ -1,4 +1,4 @@
-import { Bell, Settings, User, LogOut } from "lucide-react"
+import { Bell, User, LogOut, Settings } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -51,12 +51,6 @@ export default function Header({
             <Bell size={20} className="text-gray-500" />
             <span className="absolute top-1.5 right-2 w-2 h-2 bg-[#f05252] border border-white rounded-full"></span>
           </button>
-          <button 
-            onClick={() => onNavigate && onNavigate("settings")}
-            className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer"
-          >
-            <Settings size={20} className="text-gray-500" />
-          </button>
           <div className="relative">
             <button 
               onClick={() => setShowDropdown(!showDropdown)}
@@ -71,10 +65,18 @@ export default function Header({
               </div>
             </button>
             {showDropdown && (
-              <div className="absolute right-0 mt-3 w-48 bg-white border border-gray-100 shadow-lg rounded-xl py-2 z-50 animate-in slide-in-from-top-2">
+              <div className="absolute right-0 mt-3 w-52 bg-white border border-gray-100 shadow-lg rounded-xl py-2 z-50 animate-in slide-in-from-top-2">
+                <button
+                  onClick={() => { onNavigate && onNavigate("settings"); setShowDropdown(false) }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[14px] font-bold text-[#1e3450] hover:bg-gray-50 transition-colors"
+                >
+                  <Settings size={16} className="text-gray-500" />
+                  Settings
+                </button>
+                <div className="border-t border-gray-100 my-1" />
                 <button 
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-[14px] font-bold text-red-500 hover:bg-red-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[14px] font-bold text-red-500 hover:bg-red-50 transition-colors"
                 >
                   <LogOut size={16} />
                   Logout

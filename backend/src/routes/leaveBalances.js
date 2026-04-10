@@ -75,7 +75,7 @@ router.get('/me', verifyToken, async (req, res) => {
          lb.remaining_days,
          lb.updated_at
        FROM leave_balances lb
-       JOIN leave_types lt ON lb.leave_type_id = lt.id
+       JOIN leave_types lt ON lb.leave_type_id = lt.id AND lt.is_active = 1
        WHERE lb.user_id = ?
          AND lb.year   = ?
        ORDER BY lt.name ASC`,
@@ -133,7 +133,7 @@ router.get(
            lb.remaining_days,
            lb.updated_at
          FROM leave_balances lb
-         JOIN leave_types lt ON lb.leave_type_id = lt.id
+         JOIN leave_types lt ON lb.leave_type_id = lt.id AND lt.is_active = 1
          WHERE lb.user_id = ?
            AND lb.year   = ?
          ORDER BY lt.name ASC`,

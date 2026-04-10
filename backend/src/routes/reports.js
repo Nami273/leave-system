@@ -148,6 +148,7 @@ router.get("/leave-summary", ...guard, async (req, res) => {
          ) AS total_allocated_days
        FROM leave_types lt
        LEFT JOIN leave_requests lr ON lr.leave_type_id = lt.id AND YEAR(lr.submitted_at) = ? AND lr.status = 'approved'
+       WHERE lt.is_active = 1
        GROUP BY lt.id, lt.name
        ORDER BY lt.name ASC`,
       [year, year]
