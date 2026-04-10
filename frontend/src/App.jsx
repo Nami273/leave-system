@@ -9,7 +9,6 @@ import SuperAdminApp from './pages/super_admin/SuperAdminApp'
 import Unauthorized from './pages/Unauthorized'
 
 import './index.css'
-import './App.css'
 
 /* ── App ──────────────────────────────────────────────────────────────── */
 export default function App() {
