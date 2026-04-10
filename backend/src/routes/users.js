@@ -212,6 +212,7 @@ router.post(
       full_name,
       email,
       password,
+      phone,
       role_id,
       position_id,
       hire_date,
@@ -286,13 +287,14 @@ router.post(
 
       // ── Insert ───────────────────────────────────────────────────────────
       await pool.query(
-        `INSERT INTO users (id, username, full_name, email, password_hash, role_id, position_id, hire_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO users (id, username, full_name, email, phone, password_hash, role_id, position_id, hire_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           username,
           full_name,
           email,
+          phone || null,
           password_hash,
           role_id,
           position_id,
@@ -395,6 +397,8 @@ router.put(
       full_name,
       email,
       username,
+      password,
+      phone,
       role_id,
       position_id,
       hire_date,
@@ -406,10 +410,15 @@ router.put(
     if (full_name !== undefined) updates.full_name = full_name;
     if (email !== undefined) updates.email = email;
     if (username !== undefined) updates.username = username;
+    if (phone !== undefined) updates.phone = phone;
     if (role_id !== undefined) updates.role_id = role_id;
     if (position_id !== undefined) updates.position_id = position_id;
     if (hire_date !== undefined) updates.hire_date = hire_date;
     if (is_active !== undefined) updates.is_active = is_active;
+    
+    if (password) {
+       updates.password_hash = await bcrypt.hash(password, 10);
+    }
 
     if (Object.keys(updates).length === 0) {
       return res
