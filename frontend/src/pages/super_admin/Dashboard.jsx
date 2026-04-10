@@ -156,7 +156,7 @@ export default function SuperAdminDashboard({ onNavigate }) {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-[36px] font-fredoka font-bold text-[#1f3747]">Registry</h2>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => navigate('/superadmin/add-user')}
             className="flex items-center gap-2 rounded-full font-bold text-[15px] transition-colors !px-7 !py-3.5"
             style={{ backgroundColor: '#1f3747', color: '#ffffff' }}
           >
@@ -281,67 +281,6 @@ export default function SuperAdminDashboard({ onNavigate }) {
           </div>
         </div>
       </main>
-
-      {/* Add New User Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1f3747]/40 backdrop-blur-sm">
-          <div className="bg-white rounded-[32px] p-8 max-w-md w-full mx-6 shadow-2xl">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#eef2f9' }}>
-                <UserPlus size={22} className="text-[#4c6367]" />
-              </div>
-              <div>
-                <h3 className="text-[22px] font-fredoka font-bold text-[#1f3747]">Add New User</h3>
-                <p className="text-[13px] text-[#94a3b8] font-medium">Create a new system account</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-bold text-[#94a3b8] tracking-widest uppercase">Full Name <span className="text-red-400">*</span></label>
-                <input type="text" placeholder="e.g. John Doe" value={newUser.fullName} onChange={e => setNewUser(p => ({ ...p, fullName: e.target.value }))} className="bg-[#f4f7f9] rounded-xl py-3 px-4 text-[15px] text-[#323940] placeholder-[#a6b6c5] outline-none focus:ring-2 focus:ring-[#567278]/20" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-bold text-[#94a3b8] tracking-widest uppercase">Email <span className="text-red-400">*</span></label>
-                <input type="email" placeholder="name@happyhub.com" value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} className="bg-[#f4f7f9] rounded-xl py-3 px-4 text-[15px] text-[#323940] placeholder-[#a6b6c5] outline-none focus:ring-2 focus:ring-[#567278]/20" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-bold text-[#94a3b8] tracking-widest uppercase">Username <span className="text-red-400">*</span></label>
-                  <input type="text" placeholder="@username" value={newUser.username} onChange={e => setNewUser(p => ({ ...p, username: e.target.value }))} className="bg-[#f4f7f9] rounded-xl py-3 px-4 text-[15px] text-[#323940] placeholder-[#a6b6c5] outline-none focus:ring-2 focus:ring-[#567278]/20" />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-bold text-[#94a3b8] tracking-widest uppercase">Role</label>
-                  <select value={newUser.role} onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))} className="bg-[#f4f7f9] rounded-xl py-3 px-4 text-[15px] text-[#323940] outline-none appearance-none cursor-pointer">
-                    <option>Employee</option>
-                    <option>HR</option>
-                    <option>Manager</option>
-                    <option>Super Admin</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-bold text-[#94a3b8] tracking-widest uppercase">Password <span className="text-red-400">*</span></label>
-                <input type="password" placeholder="••••••••" value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} className="bg-[#f4f7f9] rounded-xl py-3 px-4 text-[15px] text-[#323940] placeholder-[#a6b6c5] outline-none focus:ring-2 focus:ring-[#567278]/20 tracking-widest" />
-              </div>
-            </div>
-
-            <div className="flex gap-4 mt-8">
-              <button onClick={() => setShowAddModal(false)} className="flex-1 !py-3.5 rounded-full font-bold transition-colors" style={{ backgroundColor: '#e9eff5', color: '#4c6367', fontSize: '15px' }}>
-                Cancel
-              </button>
-              <button
-                onClick={handleAddUser}
-                disabled={!newUser.fullName.trim() || !newUser.email.trim() || !newUser.username.trim() || !newUser.password.trim()}
-                className={`flex-1 !py-3.5 rounded-full font-bold transition-colors ${!newUser.fullName.trim() || !newUser.email.trim() || !newUser.username.trim() || !newUser.password.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
-                style={{ backgroundColor: '#1f3747', color: '#ffffff', fontSize: '15px' }}
-              >
-                Create User
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
