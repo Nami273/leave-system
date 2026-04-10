@@ -11,6 +11,7 @@ const USER_SELECT = `
   u.username,
   u.full_name,
   u.email,
+  u.phone,
   u.hire_date,
   u.is_active,
   u.created_at,
@@ -344,6 +345,37 @@ router.get(
       res.json({ users: rows });
     } catch (err) {
       console.error("GET / error:", err);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  },
+);
+
+// ─── 5.5 GET /:id ─────────────────────────────────────────────────────────────
+// Get user by ID.
+// Protected: HR and Super Admin only.
+router.get(
+  "/:id",
+  verifyToken,
+  requireRole("HR", "Super Admin"),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [rows] = await pool.query(
+        `SELECT ${USER_SELECT}
+         FROM   users u
+         ${USER_JOINS}
+         WHERE  u.id = ?
+           AND  u.deleted_at IS NULL`,
+        [id],
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      res.json({ user: rows[0] });
+    } catch (err) {
+      console.error("GET /:id error:", err);
       res.status(500).json({ message: "Internal server error." });
     }
   },
