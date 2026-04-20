@@ -29,6 +29,8 @@ router.get("/me", verifyToken, async (req, res) => {
          lr.user_id,
          lr.leave_type_id,
          lt.name             AS leave_type_name,
+         lt.icon_name        AS leave_type_icon,
+         lt.color_type       AS leave_type_color,
          lr.start_date,
          lr.end_date,
          lr.total_days,
@@ -195,7 +197,7 @@ router.post("/", verifyToken, upload.array("files", 10), async (req, res) => {
     }
 
     const [created] = await pool.query(
-      `SELECT lr.*, lt.name AS leave_type_name
+      `SELECT lr.*, lt.name AS leave_type_name, lt.icon_name AS leave_type_icon, lt.color_type AS leave_type_color
        FROM leave_requests lr
        JOIN leave_types lt ON lr.leave_type_id = lt.id
        WHERE lr.id = ?`,
@@ -317,6 +319,8 @@ router.get(
            u.email,
            lr.leave_type_id,
            lt.name             AS leave_type_name,
+           lt.icon_name        AS leave_type_icon,
+           lt.color_type       AS leave_type_color,
            lr.start_date,
            lr.end_date,
            lr.total_days,
@@ -369,6 +373,8 @@ router.get(
            p.name        AS position,
            lr.leave_type_id,
            lt.name       AS leave_type_name,
+           lt.icon_name  AS leave_type_icon,
+           lt.color_type AS leave_type_color,
            lr.start_date,
            lr.end_date,
            lr.total_days,
@@ -405,7 +411,9 @@ router.get(
       const [history] = await pool.query(
         `SELECT
            lr.id,
-           lt.name   AS leave_type_name,
+           lt.name       AS leave_type_name,
+           lt.icon_name  AS leave_type_icon,
+           lt.color_type AS leave_type_color,
            lr.start_date,
            lr.end_date,
            lr.total_days,
@@ -490,6 +498,8 @@ router.get(
            u.email,
            lr.leave_type_id,
            lt.name             AS leave_type_name,
+           lt.icon_name        AS leave_type_icon,
+           lt.color_type       AS leave_type_color,
            lr.start_date,
            lr.end_date,
            lr.total_days,

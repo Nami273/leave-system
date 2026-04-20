@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from "react"
 import Header from "../../components/Header"
-import { CalendarDays, Umbrella, Users, Thermometer, ChevronLeft, ChevronRight, X } from "lucide-react"
+import { CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react"
 import api from "../../services/api"
 import { useNavigate } from "react-router-dom"
+import { resolveLeaveTypeStyle } from "../../utils/leaveTypeUtils"
 
 function isSameDay(a, b) {
   return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
@@ -65,6 +65,8 @@ export default function History({ onNavigate }) {
            return {
              id: r.id,
              type: r.leave_type_name,
+             iconName: r.leave_type_icon,
+             colorType: r.leave_type_color,
              dates: isSameDay(sDate, eDate) 
                 ? sDate.toLocaleDateString("en-US", opts)
                 : `${sDate.toLocaleDateString("en-US", {month:"short", day:"numeric"})} - ${eDate.toLocaleDateString("en-US", opts)}`,
@@ -102,12 +104,7 @@ export default function History({ onNavigate }) {
     default: { bg: "#eef2f9", text: "#3f4a51" }
   }
 
-  const getIconData = (type) => {
-    const t = (type || "").toLowerCase()
-    if (t.includes("sick") || t.includes("ป่วย")) return { Icon: Thermometer, color: "#f57a00", bg: "#fff2e5" }
-    if (t.includes("personal") || t.includes("กิจ")) return { Icon: Users, color: "#d06ab0", bg: "#f8e0f0" }
-    return { Icon: Umbrella, color: "#1982c4", bg: "#e6f2fb" }
-  }
+  const getIconData = (item) => resolveLeaveTypeStyle(item.iconName, item.colorType)
 
   // Filter by status
   let filteredData = filter === "all"
@@ -281,7 +278,7 @@ export default function History({ onNavigate }) {
                         <td className="py-2.5 px-4 rounded-l-[24px]">
                           <div className="flex items-center gap-4">
                             {(() => {
-                              const { Icon, color, bg } = getIconData(item.type)
+                              const { Icon, color, bg } = getIconData(item)
                               return (
                                 <div
                                   className="w-12 h-12 rounded-full flex items-center justify-center"

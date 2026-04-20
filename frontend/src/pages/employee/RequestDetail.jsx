@@ -3,10 +3,11 @@ import { useParams, useNavigate } from "react-router-dom"
 import Header from "../../components/Header"
 import api from "../../services/api"
 import {
-  Umbrella, Thermometer, Users, CheckCircle, XCircle,
+  Umbrella, CheckCircle, XCircle,
   ArrowLeft, Calendar, FileText, File, Mail, Phone,
   Briefcase, CalendarDays
 } from "lucide-react"
+import { resolveLeaveTypeStyle } from "../../utils/leaveTypeUtils"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_STYLES = {
@@ -17,12 +18,7 @@ const STATUS_STYLES = {
   cancelled:    { bg: "#f1f5f9", text: "#475569", border: "#cbd5e1" },
 }
 
-function getIconData(typeName) {
-  const t = typeName?.toLowerCase() || ""
-  if (t.includes("sick"))     return { Icon: Thermometer, color: "#f57a00", bg: "#fff2e5" }
-  if (t.includes("personal")) return { Icon: Users,       color: "#d06ab0", bg: "#f8e0f0" }
-  return                               { Icon: Umbrella,   color: "#1982c4", bg: "#e6f2fb" }
-}
+// getIconData is replaced by resolveLeaveTypeStyle from leaveTypeUtils
 
 function formatDate(ds) {
   if (!ds) return "—"
@@ -107,7 +103,7 @@ export default function RequestDetail({ onNavigate }) {
 
   const { request, files = [] } = data
   const statusStyle = STATUS_STYLES[request.status?.toLowerCase()] || STATUS_STYLES.pending
-  const { Icon, color: iconColor, bg: iconBg } = getIconData(request.leave_type_name)
+  const { Icon, color: iconColor, bg: iconBg } = resolveLeaveTypeStyle(request.leave_type_icon, request.leave_type_color)
   const canCancel = !actionDone && request.status === "pending"
 
   return (

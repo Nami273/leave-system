@@ -4,6 +4,7 @@ import { Building, Mail, Phone, Calendar as CalendarIcon, Briefcase, UserCog, Us
 import { useNavigate, useParams } from "react-router-dom"
 import Header from "../../components/Header"
 import api from "../../services/api"
+import { resolveLeaveTypeStyle } from "../../utils/leaveTypeUtils"
 
 // Color name → hex background (mirrors LeaveType.jsx colorStyles)
 const COLOR_MAP = {
@@ -153,12 +154,7 @@ function getRequestTheme(status = "") {
   return { bg: "#fee481", text: "#6b5413" }
 }
 
-function getRequestIconData(typeName = "") {
-  const normalized = typeName.toLowerCase()
-  if (normalized.includes("sick")) return { Icon: Thermometer, color: "#f57a00", bg: "#fff2e5" }
-  if (normalized.includes("personal")) return { Icon: Users, color: "#d06ab0", bg: "#f8e0f0" }
-  return { Icon: Umbrella, color: "#1982c4", bg: "#e6f2fb" }
-}
+// getRequestIconData replaced by resolveLeaveTypeStyle from leaveTypeUtils
 
 export default function EmployeeProfile({ onNavigate }) {
   const navigate = useNavigate()
@@ -478,7 +474,7 @@ export default function EmployeeProfile({ onNavigate }) {
                     {displayedActivities.length === 0 ? (
                       <p className="text-[14px] font-medium text-center text-[#94a3b8] py-8">No leave request history yet.</p>
                     ) : displayedActivities.map((request) => {
-                      const { Icon, color, bg } = getRequestIconData(request.leave_type_name)
+                      const { Icon, color, bg } = resolveLeaveTypeStyle(request.leave_type_icon, request.leave_type_color)
                       const statusTheme = getRequestTheme(request.status)
                       const dateRange = isSameDayStr(request.start_date, request.end_date)
                         ? formatDateShort(request.start_date)

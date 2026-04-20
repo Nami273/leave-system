@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom"
 import Header from "../../components/Header"
 import api from "../../services/api"
 import {
-  Umbrella, Thermometer, Users, ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight,
   CheckCircle, XCircle, ExternalLink, ChevronDown, ChevronUp
 } from "lucide-react"
+import { resolveLeaveTypeStyle } from "../../utils/leaveTypeUtils"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const MONTH_NAMES = [
@@ -22,12 +23,7 @@ const STATUS_STYLES = {
   acknowledged: { bg: "#93c5fd", text: "#1e3a8a" },
 }
 
-function getIconData(typeName) {
-  const t = typeName?.toLowerCase() || ""
-  if (t.includes("sick")) return { Icon: Thermometer, color: "#f57a00", bg: "#fff2e5" }
-  if (t.includes("personal")) return { Icon: Users, color: "#d06ab0", bg: "#f8e0f0" }
-  return { Icon: Umbrella, color: "#1982c4", bg: "#e6f2fb" }
-}
+// getIconData replaced by resolveLeaveTypeStyle from leaveTypeUtils
 
 function formatDateShort(ds) {
   return new Date(ds).toLocaleDateString("en-US", { month: "short", day: "numeric" })
@@ -267,7 +263,7 @@ function RequestCard({ req, onApprove, onReject, onAcknowledge }) {
   const [actionLoading, setActionLoading] = useState(null)
   const [showRejectModal, setShowRejectModal] = useState(false)
 
-  const { Icon, color, bg } = getIconData(req.leave_type_name)
+  const { Icon, color, bg } = resolveLeaveTypeStyle(req.leave_type_icon, req.leave_type_color)
   const statusStyle = STATUS_STYLES[req.status?.toLowerCase()] || STATUS_STYLES.pending
   const dateRange = isSameDayStr(req.start_date, req.end_date)
     ? formatDateShort(req.start_date)

@@ -3,9 +3,10 @@ import Header from "../../components/Header"
 import { useAuth } from "../../contexts/AuthContext"
 import api from "../../services/api"
 import {
-  Umbrella, Thermometer, Users, ClipboardList, CalendarCheck, UserCheck,
+  ClipboardList, CalendarCheck, UserCheck,
   ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock
 } from "lucide-react"
+import { resolveLeaveTypeStyle } from "../../utils/leaveTypeUtils"
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getTimeGreeting() {
@@ -41,12 +42,7 @@ const STATUS_STYLES = {
   acknowledged: { bg: "#93c5fd", text: "#1e3a8a" },
 }
 
-function getIconData(typeName) {
-  const t = typeName?.toLowerCase() || ""
-  if (t.includes("sick")) return { Icon: Thermometer, color: "#f57a00", bg: "#fff2e5" }
-  if (t.includes("personal")) return { Icon: Users, color: "#d06ab0", bg: "#f8e0f0" }
-  return { Icon: Umbrella, color: "#1982c4", bg: "#e6f2fb" }
-}
+// getIconData replaced by resolveLeaveTypeStyle from leaveTypeUtils
 
 function formatDateShort(ds) {
   return new Date(ds).toLocaleDateString("en-US", { month: "short", day: "numeric" })
@@ -228,7 +224,7 @@ function MiniCalendar({ requests = [] }) {
             <div className="space-y-2">
               {peopleOnLeave.map(r => {
                 const style = STATUS_STYLES[r.status?.toLowerCase()] || STATUS_STYLES.pending
-                const { Icon, color, bg } = getIconData(r.leave_type_name)
+                const { Icon, color, bg } = resolveLeaveTypeStyle(r.leave_type_icon, r.leave_type_color)
                 return (
                   <div key={r.id} className="flex items-center gap-2.5 p-2.5 bg-[#f9fafb] rounded-2xl">
                     <div className="w-7 h-7 rounded-full bg-sky-100 flex items-center justify-center shrink-0 text-sky-600 font-bold text-[11px]">
@@ -426,7 +422,7 @@ export default function Dashboard({ onNavigate }) {
             ) : (
               <div className="space-y-3">
                 {recent.map(req => {
-                  const { Icon, color, bg } = getIconData(req.leave_type_name)
+                  const { Icon, color, bg } = resolveLeaveTypeStyle(req.leave_type_icon, req.leave_type_color)
                   const style = STATUS_STYLES[req.status?.toLowerCase()] || STATUS_STYLES.pending
                   const dateRange = isSameDayStr(req.start_date, req.end_date)
                     ? formatDateShort(req.start_date)

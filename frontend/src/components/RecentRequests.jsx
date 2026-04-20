@@ -1,4 +1,4 @@
-import { Umbrella, Users, Thermometer } from "lucide-react"
+import { resolveLeaveTypeStyle } from "../utils/leaveTypeUtils"
 
 /*file ตารางแสดงคำขอลาล่าสุด*/
 
@@ -11,12 +11,7 @@ export default function RecentRequests({ requests = [], onNavigate }) {
     acknowledged: { bg: "#93c5fd", text: "#1e3a8a" },
   }
 
-  const getIconData = (typeName) => {
-    const t = typeName?.toLowerCase() || '';
-    if (t.includes('sick')) return { Icon: Thermometer, color: "#f57a00", bg: "#fff2e5" };
-    if (t.includes('personal')) return { Icon: Users, color: "#d06ab0", bg: "#f8e0f0" };
-    return { Icon: Umbrella, color: "#1982c4", bg: "#e6f2fb" };
-  }
+  // getIconData replaced by resolveLeaveTypeStyle from leaveTypeUtils
 
   const formatDateShort = (dateString) => {
     const d = new Date(dateString);
@@ -57,7 +52,7 @@ export default function RecentRequests({ requests = [], onNavigate }) {
           <p className="text-[14px] font-medium text-center text-[#94a3b8] py-8">No recent leave requests found.</p>
         ) : (
           requests.map((req) => {
-            const { Icon, color, bg } = getIconData(req.leave_type_name);
+            const { Icon, color, bg } = resolveLeaveTypeStyle(req.leave_type_icon, req.leave_type_color);
             const styleLabel = statusStyles[req.status.toLowerCase()] || statusStyles.pending;
 
             let dateRange = formatDateShort(req.start_date);

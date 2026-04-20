@@ -1,4 +1,5 @@
-import { Umbrella, Thermometer, Users, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react"
+import { Umbrella, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react"
+import { resolveLeaveTypeStyle } from "../../utils/leaveTypeUtils"
 import { useState, useRef, useEffect, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import Header from "../../components/Header"
@@ -46,12 +47,7 @@ function getUserColor(userId) {
   return PASTEL_COLORS[Math.abs(hash) % PASTEL_COLORS.length]
 }
 
-function getRequestIconData(typeName = "") {
-  const normalized = typeName.toLowerCase()
-  if (normalized.includes("sick")) return { Icon: Thermometer, color: "#f57a00", bg: "#fff2e5" }
-  if (normalized.includes("personal")) return { Icon: Users, color: "#d06ab0", bg: "#f8e0f0" }
-  return { Icon: Umbrella, color: "#1982c4", bg: "#e6f2fb" }
-}
+// getRequestIconData replaced by resolveLeaveTypeStyle from leaveTypeUtils
 
 function getRequestTheme(status = "") {
   const normalized = status.toLowerCase()
@@ -146,6 +142,8 @@ export default function Reports({ onNavigate }) {
           initial: getInitials(r.full_name),
           bg: getUserColor(r.user_id),
           type: r.leave_type_name,
+          iconName: r.leave_type_icon,
+          colorType: r.leave_type_color,
           start: new Date(r.start_date),
           end: new Date(r.end_date),
           submitted: new Date(r.submitted_at),
@@ -470,7 +468,7 @@ export default function Reports({ onNavigate }) {
                   </tr>
                 ) :
                   paginatedData.map((hist) => {
-                    const iconInfo = getRequestIconData(hist.type);
+                    const iconInfo = resolveLeaveTypeStyle(hist.iconName, hist.colorType);
                     const Icon = iconInfo.Icon;
                     const statusTheme = getRequestTheme(hist.status);
 
