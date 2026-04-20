@@ -2,7 +2,7 @@ import { Umbrella, Users, Thermometer } from "lucide-react"
 
 /*file ตารางแสดงคำขอลาล่าสุด*/
 
-export default function RecentRequests({ requests = [] }) {
+export default function RecentRequests({ requests = [], onNavigate }) {
   const statusStyles = {
     approved: { bg: "#0cf1aa", text: "#185b48" },
     pending: { bg: "#fee481", text: "#6b5413" },
@@ -50,7 +50,7 @@ export default function RecentRequests({ requests = [] }) {
           <h3 className="font-bold text-[22px] font-fredoka text-[#3f4a51] mb-1 tracking-wide">Recent Requests</h3>
           <p className="text-[14px] font-medium text-[#94a3b8]">Keep track of your latest movements</p>
         </div>
-        <button className="text-[15px] font-bold text-[#5e6c7e] hover:text-[#3f4a51] transition-colors pt-2">View all</button>
+        <button onClick={() => onNavigate && onNavigate("history")} className="text-[15px] font-bold text-[#5e6c7e] hover:text-[#3f4a51] transition-colors pt-2">View all</button>
       </div>
       <div className="space-y-4">
         {requests.length === 0 ? (

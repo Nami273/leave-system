@@ -174,10 +174,9 @@ export default function EmployeeProfile({ onNavigate }) {
   const [error, setError] = useState("")
   const [accessSettings, setAccessSettings] = useState({
     role: "Employee",
-    canApprove: false,
-    canViewReports: false,
     isActive: true
   })
+  const [editingBalanceId, setEditingBalanceId] = useState(null)
 
   useEffect(() => {
     const loadEmployee = async () => {
@@ -246,19 +245,61 @@ export default function EmployeeProfile({ onNavigate }) {
     reader.readAsDataURL(file)
   }
 
-  const startEditLeave = (type, totalValue) => {
+  const startEditLeave = (balanceId, type, totalValue) => {
     setEditingLeave(type)
     setEditValue(String(totalValue))
+    setEditingBalanceId(balanceId)
   }
 
-  const saveEditLeave = () => {
-    setEditingLeave(null)
-    setEditValue("")
+  const saveEditLeave = async () => {
+    const newTotal = parseFloat(editValue)
+    if (isNaN(newTotal) || newTotal < 0) {
+      alert("Please enter a valid number of days.")
+      return
+    }
+    try {
+      const res = await api.put(`/leave-balances/${editingBalanceId}`, { total_days: newTotal })
+      const updated = res.data.balance
+      setBalances(prev => prev.map(b => b.id === editingBalanceId ? { ...b, total_days: updated.total_days, remaining_days: updated.remaining_days } : b))
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to update leave balance.")
+    } finally {
+      setEditingLeave(null)
+      setEditValue("")
+      setEditingBalanceId(null)
+    }
   }
 
   const cancelEditLeave = () => {
     setEditingLeave(null)
     setEditValue("")
+    setEditingBalanceId(null)
+  }
+
+  const [savingAccess, setSavingAccess] = useState(false)
+
+  const ROLE_IDS = {
+    "Employee":    "rl000001-0000-0000-0000-000000000001",
+    "Manager":     "rl000001-0000-0000-0000-000000000002",
+    "HR":          "rl000001-0000-0000-0000-000000000003",
+    "Super Admin": "rl000001-0000-0000-0000-000000000004",
+  }
+
+  const handleSaveAccess = async () => {
+    setSavingAccess(true)
+    try {
+      const payload = {
+        role_id: ROLE_IDS[accessSettings.role],
+        is_active: accessSettings.isActive ? 1 : 0,
+      }
+      await api.put(`/users/${id}`, payload)
+      setEmployee(prev => ({ ...prev, role: accessSettings.role, is_active: accessSettings.isActive ? 1 : 0 }))
+      setShowAccessModal(false)
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to save access settings.")
+    } finally {
+      setSavingAccess(false)
+    }
   }
 
   const displayedName = employee?.full_name || "Employee"
@@ -374,7 +415,7 @@ export default function EmployeeProfile({ onNavigate }) {
                             </div>
                           ) : (
                             <button
-                              onClick={() => startEditLeave(leaveKey, balance.total_days)}
+                              onClick={() => startEditLeave(balance.id, leaveKey, balance.total_days)}
                               className="absolute top-6 right-6 w-8 h-8 bg-white/40 rounded-full flex items-center justify-center hover:bg-white/60 transition-colors"
                             >
                               <PenLine size={14} />
@@ -594,31 +635,25 @@ export default function EmployeeProfile({ onNavigate }) {
                   className="w-full bg-[#f4f7f9] rounded-2xl py-3.5 px-5 text-[15px] font-bold text-[#323940] appearance-none border-none outline-none focus:ring-2 focus:ring-[#567278]/20 cursor-pointer"
                 >
                   <option>Employee</option>
-                  <option>Admin</option>
+                  <option>Manager</option>
                   <option>HR</option>
                   <option>Super Admin</option>
                 </select>
               </div>
 
-              {[
-                { key: "canApprove", label: "Can Approve Requests", desc: "Allow this user to approve leave requests" },
-                { key: "canViewReports", label: "Can View Reports", desc: "Grant access to company-wide reports" },
-                { key: "isActive", label: "Account Active", desc: "Enable or disable this account" },
-              ].map((setting) => (
-                <div key={setting.key} className="flex items-center justify-between p-4 bg-[#f9fafb] rounded-2xl">
-                  <div>
-                    <p className="font-bold text-[14px] text-[#323940]">{setting.label}</p>
-                    <p className="text-[12px] text-[#94a3b8] font-medium">{setting.desc}</p>
-                  </div>
-                  <button
-                    onClick={() => setAccessSettings((prev) => ({ ...prev, [setting.key]: !prev[setting.key] }))}
-                    className={`w-12 h-7 rounded-full flex items-center px-1 transition-colors ${accessSettings[setting.key] ? "justify-end" : "justify-start"}`}
-                    style={{ backgroundColor: accessSettings[setting.key] ? "#2c7356" : "#cbd5e1" }}
-                  >
-                    <div className="w-5 h-5 bg-white rounded-full shadow-sm transition-transform" />
-                  </button>
+              <div className="flex items-center justify-between p-4 bg-[#f9fafb] rounded-2xl">
+                <div>
+                  <p className="font-bold text-[14px] text-[#323940]">Account Active</p>
+                  <p className="text-[12px] text-[#94a3b8] font-medium">Enable or disable this account</p>
                 </div>
-              ))}
+                <button
+                  onClick={() => setAccessSettings((prev) => ({ ...prev, isActive: !prev.isActive }))}
+                  className={`w-12 h-7 rounded-full flex items-center px-1 transition-colors ${accessSettings.isActive ? "justify-end" : "justify-start"}`}
+                  style={{ backgroundColor: accessSettings.isActive ? "#2c7356" : "#cbd5e1" }}
+                >
+                  <div className="w-5 h-5 bg-white rounded-full shadow-sm transition-transform" />
+                </button>
+              </div>
             </div>
 
             <div className="flex gap-4 mt-8">
@@ -630,11 +665,12 @@ export default function EmployeeProfile({ onNavigate }) {
                 Cancel
               </button>
               <button
-                onClick={() => setShowAccessModal(false)}
+                onClick={handleSaveAccess}
+                disabled={savingAccess}
                 className="flex-1 !py-3.5 rounded-full font-bold transition-colors"
-                style={{ backgroundColor: "#dcf5eb", color: "#2c7356", fontSize: "15px" }}
+                style={{ backgroundColor: savingAccess ? "#e2e8f0" : "#dcf5eb", color: savingAccess ? "#94a3b8" : "#2c7356", fontSize: "15px" }}
               >
-                Save Changes
+                {savingAccess ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>

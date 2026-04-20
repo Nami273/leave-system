@@ -129,7 +129,7 @@ export default function Dashboard({ onNavigate }) {
 
         {/* Recent Requests & Team Members */}
         <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8">
-          <RecentRequests requests={requests.slice(0, 5)} />
+          <RecentRequests requests={requests.slice(0, 5)} onNavigate={onNavigate} />
           <div className="flex flex-col gap-8">
             <TeamMembersOut teamOut={teamOut} />
           </div>

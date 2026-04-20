@@ -530,11 +530,11 @@ router.put(
 // ─── 7. PUT /:id ──────────────────────────────────────────────────────────────
 // Update any user's info.
 // Allowed fields: full_name, email, username, role_id, position_id, hire_date, is_active.
-// Protected: Super Admin only.
+// Protected: HR (role/is_active only) and Super Admin (all fields).
 router.put(
   "/:id",
   verifyToken,
-  requireRole("Super Admin"),
+  requireRole("HR", "Super Admin"),
   async (req, res) => {
     const { id } = req.params;
     const {
