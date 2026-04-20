@@ -24,7 +24,7 @@ export default function SuperAdminDashboard({ onNavigate }) {
         const { data } = await api.get('/users')
         const colors = ['#fef08a', '#c4b5fd', '#a7f3d0', '#fca5a5', '#bae6fd']
 
-        const mappedUsers = data.users.map((u, i) => {
+        const mappedUsers = data.users.filter(u => u.role !== 'Super Admin').map((u, i) => {
           const nameStr = u.full_name || u.username || 'Unknown User'
           const initials = nameStr.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
           return {

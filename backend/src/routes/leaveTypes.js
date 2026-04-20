@@ -7,6 +7,7 @@ const { verifyToken, requireRole } = require("../middleware/auth");
 const LT_SELECT = `
   id, name, default_days_per_year, description,
   color_type, icon_name, requires_attachment,
+  requires_manager_approval, carryover,
   is_active, min_service_months, created_at
 `;
 
@@ -36,6 +37,8 @@ router.post(
       color_type,
       icon_name,
       requires_attachment,
+      requires_manager_approval,
+      carryover,
       min_service_months,
     } = req.body;
 
@@ -59,8 +62,8 @@ router.post(
 
       await pool.query(
         `INSERT INTO leave_types
-           (id, name, default_days_per_year, description, color_type, icon_name, requires_attachment, min_service_months)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+           (id, name, default_days_per_year, description, color_type, icon_name, requires_attachment, requires_manager_approval, carryover, min_service_months)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           name.trim(),
@@ -69,6 +72,8 @@ router.post(
           color_type ?? "blue",
           icon_name ?? "umbrella",
           requires_attachment ? 1 : 0,
+          requires_manager_approval !== false ? 1 : 0,
+          carryover ? 1 : 0,
           min_service_months ?? 0,
         ],
       );
@@ -122,6 +127,8 @@ router.put(
       color_type,
       icon_name,
       requires_attachment,
+      requires_manager_approval,
+      carryover,
       min_service_months,
       is_active,
     } = req.body;
@@ -160,6 +167,8 @@ router.put(
       if (color_type !== undefined)            { fields.push("color_type = ?");            values.push(color_type); }
       if (icon_name !== undefined)             { fields.push("icon_name = ?");             values.push(icon_name); }
       if (requires_attachment !== undefined)   { fields.push("requires_attachment = ?");   values.push(requires_attachment ? 1 : 0); }
+      if (requires_manager_approval !== undefined) { fields.push("requires_manager_approval = ?"); values.push(requires_manager_approval ? 1 : 0); }
+      if (carryover !== undefined)             { fields.push("carryover = ?");             values.push(carryover ? 1 : 0); }
       if (min_service_months !== undefined)    { fields.push("min_service_months = ?");    values.push(min_service_months); }
       if (is_active !== undefined)             { fields.push("is_active = ?");             values.push(is_active ? 1 : 0); }
 

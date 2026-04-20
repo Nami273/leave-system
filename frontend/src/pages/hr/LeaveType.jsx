@@ -100,6 +100,8 @@ export default function LeaveType({ onNavigate }) {
         colorType: t.color_type || 'blue',
         iconName: t.icon_name || 'umbrella',
         reqAttachment: !!t.requires_attachment,
+        reqManager: t.requires_manager_approval !== 0,
+        carryover: !!t.carryover,
         service: t.min_service_months || 0
       }))
       setLeaveTypes(formatted)
@@ -157,8 +159,8 @@ export default function LeaveType({ onNavigate }) {
       service: leave.service,
       icon: leave.iconName,
       color: leave.colorType,
-      reqManager: true,
-      carryover: false,
+      reqManager: leave.reqManager !== false,
+      carryover: !!leave.carryover,
       reqAttachment: leave.reqAttachment
     })
     setEditingId(leave.id)
@@ -174,7 +176,9 @@ export default function LeaveType({ onNavigate }) {
       color_type: form.color,
       icon_name: form.icon,
       min_service_months: parseInt(form.service) || 0,
-      requires_attachment: form.reqAttachment
+      requires_attachment: form.reqAttachment,
+      requires_manager_approval: form.reqManager,
+      carryover: form.carryover
     }
 
     try {
@@ -190,6 +194,8 @@ export default function LeaveType({ onNavigate }) {
             colorType: updated.color_type || 'blue',
             iconName: updated.icon_name || 'umbrella',
             reqAttachment: !!updated.requires_attachment,
+            reqManager: updated.requires_manager_approval !== 0,
+            carryover: !!updated.carryover,
             service: updated.min_service_months || 0
           } : leave
         ))
@@ -204,6 +210,8 @@ export default function LeaveType({ onNavigate }) {
           colorType: created.color_type || 'blue',
           iconName: created.icon_name || 'umbrella',
           reqAttachment: !!created.requires_attachment,
+          reqManager: created.requires_manager_approval !== 0,
+          carryover: !!created.carryover,
           service: created.min_service_months || 0
         }])
       }

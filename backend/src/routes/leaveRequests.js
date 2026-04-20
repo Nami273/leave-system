@@ -93,6 +93,20 @@ router.post("/", verifyToken, upload.array("files", 10), async (req, res) => {
   try {
     const currentYear = new Date().getFullYear();
 
+    const [typeRows] = await pool.query(
+      `SELECT requires_attachment, requires_manager_approval FROM leave_types WHERE id = ?`,
+      [leave_type_id]
+    );
+
+    if (typeRows.length === 0) {
+      return res.status(404).json({ message: "Leave type not found." });
+    }
+
+    const leaveType = typeRows[0];
+    if (leaveType.requires_attachment && (!req.files || req.files.length === 0)) {
+      return res.status(400).json({ message: "This leave type requires supporting document attachments to submit." });
+    }
+
     const [balanceRows] = await pool.query(
       `SELECT remaining_days
        FROM leave_balances
@@ -140,7 +154,7 @@ router.post("/", verifyToken, upload.array("files", 10), async (req, res) => {
 
     const id = uuidv4();
     let computedStatus = 'pending';
-    if (leave_type_id === 'lt000001-0000-0000-0000-000000000001') {
+    if (!leaveType.requires_manager_approval) {
       computedStatus = 'acknowledged';
     }
 
