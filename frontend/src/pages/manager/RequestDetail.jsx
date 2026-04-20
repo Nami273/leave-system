@@ -4,7 +4,7 @@ import ManagerHeader from "./ManagerHeader"
 import api from "../../services/api"
 import {
   Umbrella, Thermometer, Users, CheckCircle, XCircle,
-  ArrowLeft, Calendar, FileText, File, Mail,
+  ArrowLeft, Calendar, FileText, File, Mail, Phone,
   Briefcase, CalendarDays, ChevronLeft, ChevronRight,
 } from "lucide-react"
 
@@ -208,13 +208,24 @@ export default function RequestDetail({ onNavigate }) {
           {/* Contact */}
           <div style={{ flex: "0 0 auto", background: "#f8fafc", borderRadius: "18px", padding: "18px 22px", minWidth: "230px" }}>
             <p style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "12px" }}>Contact Details</p>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#e6f2fb", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <Mail size={14} color="#1982c4" strokeWidth={2.5} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#e6f2fb", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Mail size={14} color="#1982c4" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#94a3b8" }}>Work Email</p>
+                  <p style={{ fontSize: "13px", fontWeight: 700, color: "#2d3e50" }}>{request.email || "—"}</p>
+                </div>
               </div>
-              <div>
-                <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#94a3b8" }}>Work Email</p>
-                <p style={{ fontSize: "13px", fontWeight: 700, color: "#2d3e50" }}>{request.email || "—"}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#cdecea", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Phone size={14} color="#185b48" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#94a3b8" }}>Mobile Number</p>
+                  <p style={{ fontSize: "13px", fontWeight: 700, color: "#2d3e50" }}>{request.phone || "—"}</p>
+                </div>
               </div>
             </div>
           </div>

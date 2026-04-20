@@ -36,7 +36,14 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
-  const value = { user, token, loading, login, logout }
+  const updateUser = (updatedUserData) => {
+    // Merge new data with existing token
+    const newUser = { ...user, ...updatedUserData }
+    localStorage.setItem('user', JSON.stringify(newUser))
+    setUser(newUser)
+  }
+
+  const value = { user, token, loading, login, logout, updateUser }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

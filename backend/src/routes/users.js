@@ -118,17 +118,18 @@ router.put("/me/password", verifyToken, async (req, res) => {
 // Protected: verifyToken only.
 // NOTE: must be declared BEFORE PUT /:id.
 router.put("/me", verifyToken, async (req, res) => {
-  const { full_name, email, username } = req.body;
+  const { full_name, email, username, phone } = req.body;
 
   // Only pick fields that were actually supplied in the request body
   const updates = {};
   if (full_name !== undefined) updates.full_name = full_name;
   if (email !== undefined) updates.email = email;
   if (username !== undefined) updates.username = username;
+  if (phone !== undefined) updates.phone = phone;
 
   if (Object.keys(updates).length === 0) {
     return res.status(400).json({
-      message: "At least one field (full_name, email, username) is required.",
+      message: "At least one field (full_name, email, username, phone) is required.",
     });
   }
 
@@ -208,9 +209,9 @@ router.post(
   requireRole("HR", "Super Admin"),
   async (req, res) => {
     const {
-      username,
       full_name,
       email,
+      phone,
       password,
       phone,
       role_id,
@@ -220,7 +221,6 @@ router.post(
 
     // ── Presence validation ──────────────────────────────────────────────────
     if (
-      !username ||
       !full_name ||
       !email ||
       !password ||
@@ -230,18 +230,19 @@ router.post(
     ) {
       return res.status(400).json({
         message:
-          "All fields are required: username, full_name, email, password, role_id, position_id, hire_date.",
+          "All fields are required: full_name, email, password, role_id, position_id, hire_date.",
       });
     }
 
     const ROLE_EMPLOYEE = "rl000001-0000-0000-0000-000000000001";
+    const ROLE_MANAGER = "rl000001-0000-0000-0000-000000000002";
     const ROLE_SUPER_ADMIN = "rl000001-0000-0000-0000-000000000004";
 
     // ── Role restriction ─────────────────────────────────────────────────────
-    if (req.user.role === "HR" && role_id !== ROLE_EMPLOYEE) {
+    if (req.user.role === "HR" && role_id !== ROLE_EMPLOYEE && role_id !== ROLE_MANAGER) {
       return res
         .status(403)
-        .json({ message: "HR may only create users with the Employee role." });
+        .json({ message: "HR may only create users with the Employee or Manager role." });
     }
 
     if (req.user.role === "Super Admin" && role_id === ROLE_SUPER_ADMIN) {
@@ -251,16 +252,16 @@ router.post(
     }
 
     try {
-      // ── Duplicate email / username check ─────────────────────────────────
+      // ── Duplicate email check ─────────────────────────────────
       const [dupRows] = await pool.query(
         `SELECT id FROM users
-       WHERE  (email = ? OR username = ?)
+       WHERE  email = ?
          AND  deleted_at IS NULL`,
-        [email, username],
+        [email],
       );
       if (dupRows.length > 0) {
         return res.status(409).json({
-          message: "A user with that email or username already exists.",
+          message: "A user with that email already exists.",
         });
       }
 
@@ -285,6 +286,19 @@ router.post(
       const password_hash = await bcrypt.hash(password, 10);
       const id = uuidv4();
 
+      // Use full_name as the username base
+      let baseUsername = full_name;
+      if (!baseUsername) baseUsername = 'User';
+      let username = baseUsername;
+      let counter = 1;
+      
+      while (true) {
+        const [existing] = await pool.query('SELECT id FROM users WHERE username = ?', [username]);
+        if (existing.length === 0) break;
+        username = `${baseUsername}${counter}`;
+        counter++;
+      }
+
       // ── Insert ───────────────────────────────────────────────────────────
       await pool.query(
         `INSERT INTO users (id, username, full_name, email, phone, password_hash, role_id, position_id, hire_date)
@@ -301,6 +315,30 @@ router.post(
           hire_date,
         ],
       );
+
+      // ── Create Leave Balances for Current Year ───────────────────────────
+      const currentYear = new Date().getFullYear();
+      
+      // Calculate months of service based on hire_date
+      const hireDateObj = new Date(hire_date);
+      const today = new Date();
+      let serviceMonths = (today.getFullYear() - hireDateObj.getFullYear()) * 12 + (today.getMonth() - hireDateObj.getMonth());
+      if (today.getDate() < hireDateObj.getDate()) {
+        serviceMonths--;
+      }
+      if (serviceMonths < 0) serviceMonths = 0;
+
+      const [leaveTypes] = await pool.query('SELECT id, default_days_per_year, min_service_months FROM leave_types WHERE is_active = 1');
+      for (const lt of leaveTypes) {
+        if (serviceMonths >= lt.min_service_months) {
+          const lbId = uuidv4();
+          await pool.query(
+            `INSERT INTO leave_balances (id, user_id, leave_type_id, year, total_days, used_days, remaining_days)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [lbId, id, lt.id, currentYear, lt.default_days_per_year, 0, lt.default_days_per_year]
+          );
+        }
+      }
 
       await logAction(
         req.user.id,
@@ -329,11 +367,11 @@ router.post(
 
 // ─── 5. GET / ─────────────────────────────────────────────────────────────────
 // Get all non-deleted users.
-// Protected: HR and Super Admin only.
+// Protected: HR, Super Admin, and Manager.
 router.get(
   "/",
   verifyToken,
-  requireRole("HR", "Super Admin"),
+  requireRole("HR", "Super Admin", "Manager"),
   async (req, res) => {
     try {
       const [rows] = await pool.query(
@@ -352,7 +390,68 @@ router.get(
   },
 );
 
-// ─── 5.5 GET /:id ─────────────────────────────────────────────────────────────
+// ─── 5.5 GET /employees-summary ──────────────────────────────────────────────
+// Get employees summary.
+// Protected: HR and Super Admin only.
+router.get(
+  "/employees-summary",
+  verifyToken,
+  requireRole("HR", "Super Admin"),
+  async (_req, res) => {
+    try {
+      const currentYear = new Date().getFullYear();
+
+      const [rows] = await pool.query(
+        `SELECT
+           u.id,
+           u.username,
+           u.full_name,
+           u.email,
+           u.hire_date,
+           u.is_active,
+           u.created_at,
+           u.updated_at,
+           u.role_id,
+           r.name AS role,
+           u.position_id,
+           p.name AS position,
+           COALESCE(SUM(lb.total_days), 0) AS total_leave_quota,
+           COALESCE(SUM(lb.used_days), 0) AS used_leave_quota,
+           COALESCE(SUM(lb.remaining_days), 0) AS remaining_leave_quota
+         FROM users u
+         JOIN roles r ON u.role_id = r.id
+         JOIN positions p ON u.position_id = p.id
+         LEFT JOIN leave_balances lb
+           ON lb.user_id = u.id
+          AND lb.year = ?
+         WHERE u.deleted_at IS NULL
+           AND r.name = 'Employee'
+         GROUP BY
+           u.id,
+           u.username,
+           u.full_name,
+           u.email,
+           u.hire_date,
+           u.is_active,
+           u.created_at,
+           u.updated_at,
+           u.role_id,
+           r.name,
+           u.position_id,
+           p.name
+         ORDER BY u.full_name ASC`,
+        [currentYear],
+      );
+
+      res.json({ year: currentYear, users: rows });
+    } catch (err) {
+      console.error("GET /users/employees-summary error:", err);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  },
+);
+
+// ─── 5.6 GET /:id ─────────────────────────────────────────────────────────────
 // Get user by ID.
 // Protected: HR and Super Admin only.
 router.get(
@@ -360,8 +459,9 @@ router.get(
   verifyToken,
   requireRole("HR", "Super Admin"),
   async (req, res) => {
+    const { id } = req.params;
+
     try {
-      const { id } = req.params;
       const [rows] = await pool.query(
         `SELECT ${USER_SELECT}
          FROM   users u
