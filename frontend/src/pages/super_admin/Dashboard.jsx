@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react"
 import { Users, UserRoundX, UserCheck, UserCog, User, UserPlus, IdCardLanyard, ChevronLeft, ChevronRight, PenLine, Search, Bell, Settings, Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import Header from "../../components/Header"
 import api from "../../services/api"
+import Header from "../../components/Header"
 
 export default function SuperAdminDashboard({ onNavigate }) {
   const navigate = useNavigate()
@@ -117,11 +117,8 @@ export default function SuperAdminDashboard({ onNavigate }) {
 
   return (
     <div className="min-h-screen bg-[#eef2f9] flex flex-col font-nunito">
-      <Header
-        activePage="dashboard"
-        onNavigate={onNavigate}
-        navItems={[{ id: "dashboard", label: "Dashboard" }]}
-      />
+      {/* Header */}
+      <Header activePage="dashboard" onNavigate={onNavigate} />
 
       <main className="max-w-6xl mx-auto px-6 py-12 w-full flex-grow">
 

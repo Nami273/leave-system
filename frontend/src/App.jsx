@@ -39,17 +39,17 @@ export default function App() {
             </ProtectedRoute>
           } />
 
-          {/* hr pages */}
-          <Route path="/hr/*" element={
-            <ProtectedRoute allowedRoles={["HR"]}>
-              <HrApp />
-            </ProtectedRoute>
-          } />
-
           {/* Super Admin pages — Super Admin role only */}
           <Route path="/superadmin/*" element={
             <ProtectedRoute allowedRoles={["Super Admin"]}>
               <SuperAdminApp />
+            </ProtectedRoute>
+          } />
+
+          {/* HR pages */}
+          <Route path="/hr/*" element={
+            <ProtectedRoute allowedRoles={["HR"]}>
+              <HrApp />
             </ProtectedRoute>
           } />
 

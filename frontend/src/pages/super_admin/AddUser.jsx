@@ -1,8 +1,21 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { ChevronDown, CheckCircle, Bell, Settings, User, Briefcase, Lock, UserPlus } from "lucide-react"
-import Header from "../../components/Header"
 import api from "../../services/api"
+import Header from "../../components/Header"
+
+// Hardcoded DB Mappings
+const ROLES = [
+  { id: 'rl000001-0000-0000-0000-000000000001', name: 'Employee' },
+  { id: 'rl000001-0000-0000-0000-000000000002', name: 'Manager' },
+  { id: 'rl000001-0000-0000-0000-000000000003', name: 'HR Admin' }
+];
+
+const POSITIONS = [
+  { id: 'ps000001-0000-0000-0000-000000000001', name: 'Developer' },
+  { id: 'ps000001-0000-0000-0000-000000000002', name: 'HR Officer' },
+  { id: 'ps000001-0000-0000-0000-000000000010', name: 'Team Manager' }
+];
 
 const PHONE_PREFIXES = [
   { code: '+66', label: '+66 (TH)', max: 10, placeholder: "0812345678" },
@@ -21,8 +34,8 @@ export default function AddUser({ onNavigate }) {
     email: '',
     phonePrefix: '+66',
     phone: '',
-    role: '',
-    position: '',
+    role: 'rl000001-0000-0000-0000-000000000001',
+    position: 'ps000001-0000-0000-0000-000000000001',
     password: '',
     confirmPassword: '',
     hireDate: ''
@@ -30,38 +43,15 @@ export default function AddUser({ onNavigate }) {
 
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+
   const [showSuccess, setShowSuccess] = useState(false)
-
-  const [roles, setRoles] = useState([])
-  const [positions, setPositions] = useState([])
-
-  useEffect(() => {
-    const fetchMetadata = async () => {
-      try {
-        const [rolesRes, posRes] = await Promise.all([
-          api.get('/metadata/roles'),
-          api.get('/metadata/positions')
-        ])
-        setRoles(rolesRes.data?.roles || [])
-        setPositions(posRes.data?.positions || [])
-
-        if (rolesRes.data?.roles?.length > 0) {
-          setForm(p => ({ ...p, role: rolesRes.data.roles[0].id }))
-        }
-        if (posRes.data?.positions?.length > 0) {
-          setForm(p => ({ ...p, position: posRes.data.positions[0].id }))
-        }
-      } catch (err) {
-        console.error("Failed to load metadata", err)
-      }
-    }
-    fetchMetadata()
-  }, [])
 
   const selectedPhoneConfig = PHONE_PREFIXES.find(p => p.code === form.phonePrefix) || PHONE_PREFIXES[0]
 
   const handlePhoneChange = (e) => {
+    // Only allow digits
     const digitsOnly = e.target.value.replace(/\D/g, '');
+    
     if (digitsOnly.length <= selectedPhoneConfig.max) {
       setForm(p => ({ ...p, phone: digitsOnly }));
     }
@@ -77,7 +67,7 @@ export default function AddUser({ onNavigate }) {
     setLoading(true)
     try {
       const payload = {
-        username: form.fullName.trim(),
+        username: form.fullName.trim(), // Use Full Name for username as requested
         full_name: form.fullName.trim(),
         email: form.email,
         password: form.password,
@@ -103,14 +93,11 @@ export default function AddUser({ onNavigate }) {
 
   return (
     <div className="min-h-screen bg-[#eef2f9] flex flex-col font-nunito">
-      <Header
-        activePage=""
-        onNavigate={onNavigate}
-        navItems={[{ id: "dashboard", label: "Dashboard" }]}
-      />
+      {/* Header */}
+      <Header activePage="dashboard" onNavigate={onNavigate} />
 
       <main className="max-w-[800px] mx-auto px-6 py-12 w-full flex-grow flex flex-col items-center">
-
+        
         <div className="bg-white rounded-[32px] p-10 w-full shadow-sm">
           {/* Header */}
           <div className="mb-6">
@@ -118,7 +105,7 @@ export default function AddUser({ onNavigate }) {
               Add New User
             </h1>
             <p className="text-[#64748b] text-[15px] font-medium">
-              Create a new profile and assign permissions.
+              Create a new profile and assign permissions within the Happy Hub ecosystem.
             </p>
           </div>
 
@@ -202,7 +189,7 @@ export default function AddUser({ onNavigate }) {
                   onChange={(e) => setForm(p => ({ ...p, role: e.target.value }))}
                   className="bg-[#f4f7f9] rounded-full py-3 px-5 text-[14px] font-bold text-[#323940] outline-none appearance-none cursor-pointer w-full focus:ring-2 focus:ring-[#567278]/20"
                 >
-                  {roles.map(r => (
+                  {ROLES.map(r => (
                     <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
                 </select>
@@ -217,7 +204,7 @@ export default function AddUser({ onNavigate }) {
                   onChange={(e) => setForm(p => ({ ...p, position: e.target.value }))}
                   className="bg-[#f4f7f9] rounded-full py-3 px-5 text-[14px] font-bold text-[#323940] outline-none appearance-none cursor-pointer w-full focus:ring-2 focus:ring-[#567278]/20"
                 >
-                  {positions.map(p => (
+                  {POSITIONS.map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
@@ -228,12 +215,12 @@ export default function AddUser({ onNavigate }) {
 
           {/* Access Credentials */}
           <div className="flex items-center gap-3 mb-6 bg-[#f4f7f9] p-4 rounded-2xl">
-            <div className="flex items-center gap-3 w-full">
-              <div className="w-8 h-8 rounded-full bg-[#d4f0f0] flex items-center justify-center">
-                <Lock size={16} className="text-[#0d9488]" />
-              </div>
-              <h3 className="text-[18px] font-fredoka font-bold text-[#1f3747]">Access Credentials</h3>
-            </div>
+             <div className="flex items-center gap-3 w-full">
+               <div className="w-8 h-8 rounded-full bg-[#d4f0f0] flex items-center justify-center">
+                 <Lock size={16} className="text-[#0d9488]" />
+               </div>
+               <h3 className="text-[18px] font-fredoka font-bold text-[#1f3747]">Access Credentials</h3>
+             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10 bg-[#f9fafb] p-6 rounded-3xl">

@@ -211,8 +211,8 @@ router.post(
     const {
       full_name,
       email,
-      password,
       phone,
+      password,
       role_id,
       position_id,
       hire_date,
@@ -389,6 +389,9 @@ router.get(
   },
 );
 
+// ─── 5.5 GET /employees-summary ──────────────────────────────────────────────
+// Get employees summary.
+// Protected: HR and Super Admin only.
 router.get(
   "/employees-summary",
   verifyToken,
@@ -447,7 +450,7 @@ router.get(
   },
 );
 
-// ─── 5.5 GET /:id ─────────────────────────────────────────────────────────────
+// ─── 5.6 GET /:id ─────────────────────────────────────────────────────────────
 // Get user by ID.
 // Protected: HR and Super Admin only.
 router.get(
@@ -455,8 +458,9 @@ router.get(
   verifyToken,
   requireRole("HR", "Super Admin"),
   async (req, res) => {
+    const { id } = req.params;
+
     try {
-      const { id } = req.params;
       const [rows] = await pool.query(
         `SELECT ${USER_SELECT}
          FROM   users u
@@ -477,7 +481,6 @@ router.get(
     }
   },
 );
-
 
 // ─── 6. PUT /:id ──────────────────────────────────────────────────────────────
 // Update any user's info.

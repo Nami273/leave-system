@@ -16,7 +16,7 @@ export default function SuperAdminApp() {
       <Route path="dashboard" element={<SuperAdminDashboard onNavigate={handleNavigate} />} />
       <Route path="edit-user/:userId" element={<EditUser onNavigate={handleNavigate} />} />
       <Route path="add-user" element={<AddUser onNavigate={handleNavigate} />} />
-      <Route path="settings" element={<Settings onNavigate={handleNavigate} HeaderComponent={Header} modulePath="/superadmin" navItems={[{ id: "dashboard", label: "Dashboard" }]} />} />
+      <Route path="settings" element={<Settings onNavigate={handleNavigate} HeaderComponent={Header} />} />
       <Route path="*" element={<Navigate to="dashboard" replace />} />
     </Routes>
   )
