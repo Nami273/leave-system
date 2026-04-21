@@ -20,7 +20,7 @@ router.post("/login", async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT u.id, u.username, u.full_name, u.email, u.password_hash,
-              u.is_active, r.id AS role_id, r.name AS role_name
+              u.is_active, u.department_id, r.id AS role_id, r.name AS role_name
        FROM users u
        JOIN roles r ON u.role_id = r.id
        WHERE u.email = ?
@@ -47,6 +47,7 @@ router.post("/login", async (req, res) => {
       {
         id: user.id,
         email: user.email,
+        department_id: user.department_id,
         role_id: user.role_id,
         role: user.role_name,
       },
@@ -67,6 +68,7 @@ router.post("/login", async (req, res) => {
         username: user.username,
         full_name: user.full_name,
         email: user.email,
+        department_id: user.department_id,
         role_id: user.role_id,
         role: user.role_name,
       },

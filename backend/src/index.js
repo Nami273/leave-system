@@ -18,6 +18,7 @@ app.use("/api/leave-requests", require("./routes/leaveRequests"));
 app.use("/api/leave-balances", require("./routes/leaveBalances"));
 app.use("/api/reports", require("./routes/reports"));
 app.use("/api/metadata", require("./routes/metadata"));
+app.use("/api/departments", require("./routes/departments"));
 
 app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);

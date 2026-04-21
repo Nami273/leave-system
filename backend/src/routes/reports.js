@@ -5,9 +5,25 @@ const { verifyToken, requireRole } = require("../middleware/auth");
 // All reports routes require HR or Super Admin access.
 const guard = [verifyToken, requireRole("HR", "Super Admin")];
 
+function getDeptFilter(req, alias = "u", includeAnd = true) {
+  if (req.user.role === "HR") {
+    return {
+      sql: `${includeAnd ? " AND" : ""} (${alias}.department_id IN (SELECT department_id FROM hr_departments WHERE user_id = ?) OR ${alias}.department_id IS NULL)`,
+      param: req.user.id
+    };
+  }
+  return { sql: "", param: null };
+}
+
 // GET /dashboard - HR dashboard stats and employee directory.
-router.get("/dashboard", ...guard, async (_req, res) => {
+router.get("/dashboard", ...guard, async (req, res) => {
   try {
+    const deptFilter = getDeptFilter(req, "u");
+    const paramsStats = [];
+    if (deptFilter.param) {
+      paramsStats.push(deptFilter.param, deptFilter.param, deptFilter.param);
+    }
+    
     const [[stats]] = await pool.query(
       `SELECT
          (
@@ -17,6 +33,7 @@ router.get("/dashboard", ...guard, async (_req, res) => {
            WHERE r.name = 'Employee'
              AND u.deleted_at IS NULL
              AND u.is_active = 1
+             ${deptFilter.sql}
          ) AS total_employees,
          (
            SELECT COUNT(*)
@@ -27,6 +44,7 @@ router.get("/dashboard", ...guard, async (_req, res) => {
              AND u.deleted_at IS NULL
              AND u.is_active = 1
              AND DATE(lr.submitted_at) = CURDATE()
+             ${deptFilter.sql}
          ) AS requests_today,
          (
            SELECT COUNT(*)
@@ -38,7 +56,8 @@ router.get("/dashboard", ...guard, async (_req, res) => {
              AND u.is_active = 1
              AND DATE(lr.submitted_at) = CURDATE()
              AND lr.status IN ('pending', 'acknowledged')
-         ) AS pending_today`
+             ${deptFilter.sql}
+         ) AS pending_today`, paramsStats
     );
 
     const [employees] = await pool.query(
@@ -63,6 +82,7 @@ router.get("/dashboard", ...guard, async (_req, res) => {
        WHERE r.name = 'Employee'
          AND u.deleted_at IS NULL
          AND u.is_active = 1
+         ${deptFilter.sql}
        ORDER BY
          CASE
            WHEN EXISTS (
@@ -74,7 +94,7 @@ router.get("/dashboard", ...guard, async (_req, res) => {
            ) THEN 0
            ELSE 1
          END,
-         u.full_name ASC`
+         u.full_name ASC`, deptFilter.param ? [deptFilter.param] : []
     );
 
     res.json({ stats, employees });
@@ -86,8 +106,14 @@ router.get("/dashboard", ...guard, async (_req, res) => {
 
 // GET /overview - Dashboard summary stats for HR.
 // Returns: { stats: { total_employees, total_pending, total_approved_this_month, total_on_leave_today } }
-router.get("/overview", ...guard, async (_req, res) => {
+router.get("/overview", ...guard, async (req, res) => {
   try {
+    const deptFilterLr = getDeptFilter(req, "lr_u", true);
+    const deptFilterU = getDeptFilter(req, "u", true);
+    
+    // We need to join users to leave_requests in overview to filter by department
+    const lrJoins = `JOIN users lr_u ON leave_requests.user_id = lr_u.id`;
+
     const [rows] = await pool.query(
       `SELECT
          (
@@ -97,25 +123,33 @@ router.get("/overview", ...guard, async (_req, res) => {
            WHERE u.is_active = 1
              AND u.deleted_at IS NULL
              AND r.name = 'Employee'
+             ${deptFilterU.sql}
          ) AS total_employees,
          (
            SELECT COUNT(*)
            FROM leave_requests
+           ${lrJoins}
            WHERE status = 'pending'
+           ${deptFilterLr.sql}
          ) AS total_pending,
          (
            SELECT COUNT(*)
            FROM leave_requests
+           ${lrJoins}
            WHERE status = 'approved'
              AND MONTH(updated_at) = MONTH(CURDATE())
              AND YEAR(updated_at) = YEAR(CURDATE())
+             ${deptFilterLr.sql}
          ) AS total_approved_this_month,
          (
            SELECT COUNT(*)
            FROM leave_requests
+           ${lrJoins}
            WHERE status = 'approved'
              AND CURDATE() BETWEEN start_date AND end_date
-         ) AS total_on_leave_today`
+             ${deptFilterLr.sql}
+         ) AS total_on_leave_today`,
+      deptFilterU.param ? [deptFilterU.param, deptFilterU.param, deptFilterU.param, deptFilterU.param] : []
     );
 
     res.json({ stats: rows[0] });

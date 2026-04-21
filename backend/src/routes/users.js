@@ -19,12 +19,15 @@ const USER_SELECT = `
   u.role_id,
   r.name     AS role,
   u.position_id,
-  p.name     AS position
+  p.name     AS position,
+  u.department_id,
+  d.name     AS department
 `;
 
 const USER_JOINS = `
   JOIN roles     r ON u.role_id     = r.id
   JOIN positions p ON u.position_id = p.id
+  LEFT JOIN departments d ON u.department_id = d.id
 `;
 
 // ─── 1. GET /me ───────────────────────────────────────────────────────────────
@@ -215,6 +218,7 @@ router.post(
       password,
       role_id,
       position_id,
+      department_id,
       hire_date,
     } = req.body;
 
@@ -225,11 +229,12 @@ router.post(
       !password ||
       !role_id ||
       !position_id ||
+      !department_id ||
       !hire_date
     ) {
       return res.status(400).json({
         message:
-          "All fields are required: full_name, email, password, role_id, position_id, hire_date.",
+          "All fields are required: full_name, email, password, role_id, position_id, department_id, hire_date.",
       });
     }
 
@@ -281,6 +286,15 @@ router.post(
         return res.status(400).json({ message: "Invalid position_id." });
       }
 
+      // ── Validate department_id ───────────────────────────────────────────
+      const [deptRows] = await pool.query(
+        `SELECT id FROM departments WHERE id = ?`,
+        [department_id]
+      );
+      if (deptRows.length === 0) {
+        return res.status(400).json({ message: "Invalid department_id." });
+      }
+
       // ── Hash password & generate ID ──────────────────────────────────────
       const password_hash = await bcrypt.hash(password, 10);
       const id = uuidv4();
@@ -300,8 +314,8 @@ router.post(
 
       // ── Insert ───────────────────────────────────────────────────────────
       await pool.query(
-        `INSERT INTO users (id, username, full_name, email, phone, password_hash, role_id, position_id, hire_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO users (id, username, full_name, email, phone, password_hash, role_id, position_id, department_id, hire_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           username,
@@ -311,6 +325,7 @@ router.post(
           password_hash,
           role_id,
           position_id,
+          department_id,
           hire_date,
         ],
       );
@@ -373,12 +388,23 @@ router.get(
   requireRole("HR", "Super Admin", "Manager"),
   async (req, res) => {
     try {
+      let whereClause = "WHERE u.deleted_at IS NULL";
+      const params = [];
+
+      if (req.user.role === "Manager") {
+        whereClause += " AND u.department_id = ?";
+        params.push(req.user.department_id || null);
+      } else if (req.user.role === "HR") {
+        whereClause += " AND (u.department_id IN (SELECT department_id FROM hr_departments WHERE user_id = ?) OR u.department_id IS NULL)";
+        params.push(req.user.id);
+      }
+
       const [rows] = await pool.query(
         `SELECT ${USER_SELECT}
        FROM   users u
        ${USER_JOINS}
-       WHERE  u.deleted_at IS NULL
-       ORDER  BY u.full_name ASC`,
+       ${whereClause}
+       ORDER  BY u.full_name ASC`, params
       );
 
       res.json({ users: rows });
@@ -396,9 +422,17 @@ router.get(
   "/employees-summary",
   verifyToken,
   requireRole("HR", "Super Admin"),
-  async (_req, res) => {
+  async (req, res) => {
     try {
       const currentYear = new Date().getFullYear();
+
+      let whereClause = "WHERE u.deleted_at IS NULL AND u.is_active = 1 AND r.name = 'Employee'";
+      const params = [currentYear];
+
+      if (req.user.role === "HR") {
+        whereClause += " AND (u.department_id IN (SELECT department_id FROM hr_departments WHERE user_id = ?) OR u.department_id IS NULL)";
+        params.push(req.user.id);
+      }
 
       const [rows] = await pool.query(
         `SELECT
@@ -414,18 +448,19 @@ router.get(
            r.name AS role,
            u.position_id,
            p.name AS position,
+           u.department_id,
+           d.name AS department,
            COALESCE(SUM(lb.total_days), 0) AS total_leave_quota,
            COALESCE(SUM(lb.used_days), 0) AS used_leave_quota,
            COALESCE(SUM(lb.remaining_days), 0) AS remaining_leave_quota
          FROM users u
          JOIN roles r ON u.role_id = r.id
          JOIN positions p ON u.position_id = p.id
+         LEFT JOIN departments d ON u.department_id = d.id
          LEFT JOIN leave_balances lb
            ON lb.user_id = u.id
           AND lb.year = ?
-         WHERE u.deleted_at IS NULL
-           AND u.is_active = 1
-           AND r.name = 'Employee'
+         ${whereClause}
          GROUP BY
            u.id,
            u.username,
@@ -438,9 +473,11 @@ router.get(
            u.role_id,
            r.name,
            u.position_id,
-           p.name
+           p.name,
+           u.department_id,
+           d.name
          ORDER BY u.full_name ASC`,
-        [currentYear],
+        params,
       );
 
       res.json({ year: currentYear, users: rows });
@@ -545,6 +582,7 @@ router.put(
       phone,
       role_id,
       position_id,
+      department_id,
       hire_date,
       is_active,
     } = req.body;
@@ -557,6 +595,7 @@ router.put(
     if (phone !== undefined) updates.phone = phone;
     if (role_id !== undefined) updates.role_id = role_id;
     if (position_id !== undefined) updates.position_id = position_id;
+    if (department_id !== undefined) updates.department_id = department_id;
     if (hire_date !== undefined) updates.hire_date = hire_date;
     if (is_active !== undefined) updates.is_active = is_active;
     

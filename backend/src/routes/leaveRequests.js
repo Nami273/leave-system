@@ -323,6 +323,14 @@ router.get(
         params.push(leave_type_id);
       }
 
+      if (req.user.role === "Manager") {
+        conditions.push("u.department_id = ?");
+        params.push(req.user.department_id || null);
+      } else if (req.user.role === "HR") {
+        conditions.push(`(u.department_id IN (SELECT department_id FROM hr_departments WHERE user_id = ?) OR u.department_id IS NULL)`);
+        params.push(req.user.id);
+      }
+
       const where = `WHERE ${conditions.join(" AND ")}`;
 
       const [rows] = await pool.query(
@@ -499,6 +507,14 @@ router.get(
       if (user_id) {
         conditions.push("lr.user_id = ?");
         params.push(user_id);
+      }
+
+      if (req.user.role === "Manager") {
+        conditions.push("u.department_id = ?");
+        params.push(req.user.department_id || null);
+      } else if (req.user.role === "HR") {
+        conditions.push(`(u.department_id IN (SELECT department_id FROM hr_departments WHERE user_id = ?) OR u.department_id IS NULL)`);
+        params.push(req.user.id);
       }
 
       const where =
