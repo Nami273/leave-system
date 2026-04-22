@@ -64,14 +64,40 @@ function formatDays(value) {
   return oneDecimal.endsWith(".0") ? String(Math.trunc(numeric)) : oneDecimal
 }
 
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+]
+const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"]
+
+function getDaysInMonth(y, m) { return new Date(y, m + 1, 0).getDate() }
+function getFirstDayOfMonth(y, m) {
+  const d = new Date(y, m, 1).getDay()
+  return d === 0 ? 6 : d - 1
+}
+function isSameDay(a, b) {
+  return a && b &&
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+}
+function stripTime(d) {
+  const nd = new Date(d)
+  nd.setHours(0, 0, 0, 0)
+  return nd
+}
+
 export default function Reports({ onNavigate }) {
   const navigate = useNavigate()
 
   const [filter, setFilter] = useState("all")
   const [showDatePicker, setShowDatePicker] = useState(false)
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
+  const [startDate, setStartDate] = useState(null)
+  const [endDate, setEndDate] = useState(null)
   const [appliedRange, setAppliedRange] = useState(null)
+  const [calMonth, setCalMonth] = useState(new Date().getMonth())
+  const [calYear, setCalYear] = useState(new Date().getFullYear())
+  const [datePickMode, setDatePickMode] = useState("from")
   const [currentPage, setCurrentPage] = useState(1)
   const [balancesPage, setBalancesPage] = useState(1)
   const itemsPerPage = 4
@@ -93,6 +119,19 @@ export default function Reports({ onNavigate }) {
     }
     if (showDatePicker) document.addEventListener("mousedown", handleClick)
     return () => document.removeEventListener("mousedown", handleClick)
+  }, [showDatePicker])
+
+  useEffect(() => {
+    if (showDatePicker) {
+      if (startDate) {
+        setCalMonth(startDate.getMonth())
+        setCalYear(startDate.getFullYear())
+      } else {
+        setCalMonth(new Date().getMonth())
+        setCalYear(new Date().getFullYear())
+      }
+      setDatePickMode("from")
+    }
   }, [showDatePicker])
 
   useEffect(() => {
@@ -176,7 +215,7 @@ export default function Reports({ onNavigate }) {
     { id: "leave-type", label: "Leave Type" }
   ]
 
-  
+
 
   // Balances pagination
   const balTotalPages = Math.ceil(balancesData.length / balancesPerPage) || 1
@@ -192,7 +231,9 @@ export default function Reports({ onNavigate }) {
   if (appliedRange) {
     const { from, to } = appliedRange
     filteredData = filteredData.filter(item => {
-      return item.start >= from && item.end <= to
+      const s = stripTime(item.start)
+      const e = stripTime(item.end)
+      return s >= from && e <= to
     })
   }
 
@@ -209,16 +250,20 @@ export default function Reports({ onNavigate }) {
 
   function applyDateRange() {
     if (startDate && endDate) {
-      setAppliedRange({ from: new Date(startDate), to: new Date(endDate) })
+      let from = stripTime(startDate)
+      let to = stripTime(endDate)
+      if (to < from) { [from, to] = [to, from] }
+      setAppliedRange({ from, to })
     }
     setShowDatePicker(false)
   }
 
   function clearDateRange() {
-    setStartDate("")
-    setEndDate("")
+    setStartDate(null)
+    setEndDate(null)
     setAppliedRange(null)
     setShowDatePicker(false)
+    setDatePickMode("from")
   }
 
   function formatRange() {
@@ -319,7 +364,7 @@ export default function Reports({ onNavigate }) {
                         const balObj = row.balMap?.[name];
                         const isEligible = balObj ? balObj.isEligible : true; // default true for types not in balance map if any
                         const val = isEligible ? (balObj?.display || "0 / 0") : "0 / 0";
-                        
+
                         const getQuotaStyle = (quota) => {
                           if (!isEligible) return "text-red-600 font-bold";
                           const parts = quota.split(" / ");
@@ -359,7 +404,7 @@ export default function Reports({ onNavigate }) {
                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${page === balancesPage
                     ? "text-white"
                     : "hover:bg-gray-100 text-[#94a3b8]"
-                  }`}
+                    }`}
                   style={page === balancesPage ? { backgroundColor: '#323940' } : {}}
                 >
                   {page}
@@ -382,10 +427,10 @@ export default function Reports({ onNavigate }) {
               <div className="relative" ref={pickerRef}>
                 <button
                   onClick={() => setShowDatePicker(!showDatePicker)}
-                  className={`px-4 py-2 rounded-lg text-[13px] font-bold flex items-center gap-2 cursor-pointer transition-colors ${appliedRange
-                    ? "bg-[#1f3747] text-white"
-                    : "bg-[#f4f7f9] text-[#64748b] hover:bg-gray-100"
-                    }`}
+                  className="px-4 py-2 rounded-lg text-[13px] font-bold flex items-center gap-2 cursor-pointer transition-colors"
+                  style={appliedRange
+                    ? { backgroundColor: '#1f3747', color: '#ffffff' }
+                    : { backgroundColor: '#f4f7f9', color: '#64748b' }}
                 >
                   <CalendarDays size={16} />
                   {appliedRange ? formatRange() : "Select Date Range"}
@@ -400,28 +445,145 @@ export default function Reports({ onNavigate }) {
                 </button>
 
                 {showDatePicker && (
-                  <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-[#e2e8f0] p-5 z-50 w-[320px]">
-                    <p className="text-[11px] font-bold text-[#94a3b8] tracking-widest uppercase mb-3">Date Range</p>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-[12px] font-bold text-[#3f4a51] mb-1 block">From</label>
-                        <input
-                          type="date"
-                          value={startDate}
-                          onChange={e => setStartDate(e.target.value)}
-                          className="w-full px-3 py-2.5 rounded-xl border border-[#dde3ec] text-[14px] font-medium text-[#3f4a51] focus:outline-none focus:ring-2 focus:ring-[#1f3747]"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[12px] font-bold text-[#3f4a51] mb-1 block">To</label>
-                        <input
-                          type="date"
-                          value={endDate}
-                          onChange={e => setEndDate(e.target.value)}
-                          className="w-full px-3 py-2.5 rounded-xl border border-[#dde3ec] text-[14px] font-medium text-[#3f4a51] focus:outline-none focus:ring-2 focus:ring-[#1f3747]"
-                        />
-                      </div>
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-[#e2e8f0] p-5 z-50 w-[340px]">
+                    {/* From / To toggles */}
+                    <div className="flex gap-2 mb-4">
+                      <button
+                        onClick={() => setDatePickMode("from")}
+                        className="flex-1 py-2 rounded-xl text-[12px] font-bold transition-colors"
+                        style={datePickMode === "from"
+                          ? { backgroundColor: '#1f3747', color: '#ffffff' }
+                          : { backgroundColor: '#f4f7f9', color: '#64748b' }}
+                      >
+                        From{startDate ? `: ${formatDateShort(startDate)}` : ""}
+                      </button>
+                      <button
+                        onClick={() => setDatePickMode("to")}
+                        className="flex-1 py-2 rounded-xl text-[12px] font-bold transition-colors"
+                        style={datePickMode === "to"
+                          ? { backgroundColor: '#1f3747', color: '#ffffff' }
+                          : { backgroundColor: '#f4f7f9', color: '#64748b' }}
+                      >
+                        To{endDate ? `: ${formatDateShort(endDate)}` : ""}
+                      </button>
                     </div>
+
+                    {/* Month / Year nav */}
+                    <div className="flex items-center justify-between mb-3">
+                      <button
+                        onClick={() => {
+                          if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1) }
+                          else setCalMonth(m => m - 1)
+                        }}
+                        className="w-7 h-7 rounded-lg hover:bg-[#f0f3f8] flex items-center justify-center text-[#64748b] cursor-pointer"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[13px] text-[#1f3747]">{MONTH_NAMES[calMonth]}</span>
+                        <select
+                          value={calYear}
+                          onChange={e => setCalYear(Number(e.target.value))}
+                          className="text-[13px] font-bold text-[#1f3747] bg-[#f4f7f9] rounded-lg px-2 py-1 outline-none cursor-pointer"
+                        >
+                          {Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1) }
+                          else setCalMonth(m => m + 1)
+                        }}
+                        className="w-7 h-7 rounded-lg hover:bg-[#f0f3f8] flex items-center justify-center text-[#64748b] cursor-pointer"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+
+                    {/* Day labels */}
+                    <div className="grid grid-cols-7 text-center mb-1">
+                      {DAY_LABELS.map((d, i) => (
+                        <div key={i} className="text-[10px] font-bold text-[#94a3b8] py-1">{d}</div>
+                      ))}
+                    </div>
+
+                    {/* Calendar grid */}
+                    <div className="grid grid-cols-7 text-center gap-y-0.5">
+                      {(() => {
+                        const daysInMonth = getDaysInMonth(calYear, calMonth)
+                        const firstDay = getFirstDayOfMonth(calYear, calMonth)
+                        const prevDays = getDaysInMonth(calMonth === 0 ? calYear - 1 : calYear, calMonth === 0 ? 11 : calMonth - 1)
+                        const cells = []
+                        for (let i = firstDay - 1; i >= 0; i--) cells.push({ day: prevDays - i, current: false })
+                        for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, current: true })
+                        while (cells.length < 35) cells.push({ day: cells.length - daysInMonth - firstDay + 1, current: false })
+
+                        // Active days from history
+                        const activeDays = new Set()
+                        historyData.forEach(r => {
+                          if (r.status === "rejected" || r.status === "cancelled") return
+                          const s = new Date(r.start); s.setHours(0, 0, 0, 0)
+                          const e = new Date(r.end); e.setHours(23, 59, 59, 999)
+                          const cur = new Date(s)
+                          while (cur <= e) {
+                            if (cur.getFullYear() === calYear && cur.getMonth() === calMonth) {
+                              activeDays.add(cur.getDate())
+                            }
+                            cur.setDate(cur.getDate() + 1)
+                          }
+                        })
+
+                        return cells.map((cell, idx) => {
+                          if (!cell.current) {
+                            return <div key={idx} className="py-1 text-[12px] text-[#cbd5e1] font-semibold">{cell.day}</div>
+                          }
+                          const dayDate = new Date(calYear, calMonth, cell.day)
+                          const isToday = isSameDay(dayDate, new Date())
+                          const isFrom = isSameDay(dayDate, startDate)
+                          const isTo = isSameDay(dayDate, endDate)
+                          const isInRange = startDate && endDate && !isFrom && !isTo && dayDate > startDate && dayDate < endDate
+                          const hasLeave = activeDays.has(cell.day)
+
+                          return (
+                            <div
+                              key={idx}
+                              className="relative py-1 text-[12px] font-semibold rounded-lg cursor-pointer"
+                              onClick={() => {
+                                const clicked = new Date(calYear, calMonth, cell.day)
+                                clicked.setHours(0, 0, 0, 0)
+                                if (datePickMode === "from") {
+                                  setStartDate(clicked)
+                                  if (endDate && clicked > endDate) setEndDate(null)
+                                  setDatePickMode("to")
+                                } else {
+                                  if (!startDate || clicked < startDate) {
+                                    setStartDate(clicked)
+                                    setEndDate(null)
+                                    setDatePickMode("to")
+                                  } else {
+                                    setEndDate(clicked)
+                                  }
+                                }
+                              }}
+                            >
+                              <span className={`relative z-10 inline-flex items-center justify-center w-7 h-7 rounded-full transition-all
+                                ${isFrom || isTo ? "bg-[#1f3747] text-white"
+                                  : isInRange ? "bg-[#1f3747]/15 text-[#1f3747]"
+                                    : isToday ? "bg-[#1c355e] text-white"
+                                      : "text-[#3f4a51] hover:bg-[#f0f3f8]"}`}>
+                                {cell.day}
+                              </span>
+                              {hasLeave && !isFrom && !isTo && !isToday && (
+                                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#f57a00]" />
+                              )}
+                            </div>
+                          )
+                        })
+                      })()}
+                    </div>
+
                     <div className="flex gap-2 mt-4">
                       <button
                         onClick={clearDateRange}
@@ -430,7 +592,8 @@ export default function Reports({ onNavigate }) {
                       <button
                         onClick={applyDateRange}
                         disabled={!startDate || !endDate}
-                        className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-white bg-[#1f3747] hover:bg-[#162a37] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{ backgroundColor: '#1f3747', color: '#ffffff' }}
                       >Apply</button>
                     </div>
                   </div>
@@ -543,8 +706,8 @@ export default function Reports({ onNavigate }) {
               Showing {startItem}-{endItem} of {filteredData.length} requests
             </p>
             <div className="flex gap-2 items-center text-[#94a3b8] font-bold">
-              <ChevronLeft 
-                size={16} 
+              <ChevronLeft
+                size={16}
                 className={`cursor-pointer hover:text-[#3f4a51] ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               />
@@ -561,8 +724,8 @@ export default function Reports({ onNavigate }) {
                   {page}
                 </button>
               ))}
-              <ChevronRight 
-                size={16} 
+              <ChevronRight
+                size={16}
                 className={`cursor-pointer hover:text-[#3f4a51] ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               />
