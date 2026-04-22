@@ -42,7 +42,7 @@ export default function Dashboard({ onNavigate }) {
     { id: "leave-type", label: "Leave Type" }
   ]
 
-  
+
 
   const [showAllEmployees, setShowAllEmployees] = useState(false)
   const [stats, setStats] = useState({
@@ -74,10 +74,10 @@ export default function Dashboard({ onNavigate }) {
         setEmployees(dashRes.data?.employees || [])
 
         // Build full 12-month array, fill 0 for months with no data
-        const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+        const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         const rawMonthly = monthlyRes.data?.monthly || []
         const byMonth = {}
-        rawMonthly.forEach(r => { byMonth[r.month] = Number(r.total_days || 0) })
+        rawMonthly.forEach(r => { byMonth[r.month] = Number(r.approved_days || 0) })
         const built = MONTHS.map((label, i) => ({
           month: label,
           value: byMonth[i + 1] || 0
@@ -196,7 +196,7 @@ export default function Dashboard({ onNavigate }) {
 
           <div className="bg-white rounded-[40px] p-8 shadow-sm flex flex-col min-h-[400px] self-start w-full">
             <h3 className="font-bold text-[22px] font-fredoka text-[#1f3747] tracking-wide mb-1">Leave Trends</h3>
-            <p className="text-[13px] font-medium text-[#7a8c98] mb-8">Total leave days requested per month</p>
+            <p className="text-[13px] font-medium text-[#7a8c98] mb-8">Total number of approved leave days each month.</p>
 
             {loading ? (
               <div className="flex-grow flex items-center justify-center text-[#94a3b8] font-bold text-[14px]">Loading chart...</div>
@@ -225,7 +225,7 @@ export default function Dashboard({ onNavigate }) {
                             }}
                           />
                         </div>
-                        <span className={`text-[11px] font-bold ${ isCurrentMonth ? "text-[#aa6b4c]" : "text-[#7a8c98]" }`}>
+                        <span className={`text-[11px] font-bold ${isCurrentMonth ? "text-[#aa6b4c]" : "text-[#7a8c98]"}`}>
                           {item.month}
                         </span>
                       </div>

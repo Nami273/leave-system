@@ -465,6 +465,11 @@ router.get(
       const conditions = [];
       const params = [];
 
+      if (req.user.role === "HR") {
+        conditions.push("(u.department_id IN (SELECT department_id FROM hr_departments WHERE user_id = ?) OR u.department_id IS NULL)");
+        params.push(req.user.id);
+      }
+
       if (status) {
         const validStatuses = [
           "pending",

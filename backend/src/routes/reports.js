@@ -168,6 +168,13 @@ router.get("/leave-summary", ...guard, async (req, res) => {
   }
 
   try {
+    const deptFilterU = getDeptFilter(req, "u", true);
+    
+    const params = [year];
+    if (deptFilterU.param) params.push(deptFilterU.param);
+    params.push(year);
+    if (deptFilterU.param) params.push(deptFilterU.param);
+
     const [summary] = await pool.query(
       `SELECT
          lt.id AS leave_type_id,
@@ -181,6 +188,7 @@ router.get("/leave-summary", ...guard, async (req, res) => {
            JOIN users u ON lb.user_id = u.id
            JOIN roles r ON u.role_id = r.id
            WHERE lb.leave_type_id = lt.id AND lb.year = ? AND r.name = 'Employee'
+           ${deptFilterU.sql}
          ) AS total_allocated_days
        FROM leave_types lt
        LEFT JOIN (
@@ -189,11 +197,12 @@ router.get("/leave-summary", ...guard, async (req, res) => {
            JOIN users u ON lr.user_id = u.id 
            JOIN roles r ON u.role_id = r.id 
            WHERE r.name = 'Employee' AND YEAR(lr.submitted_at) = ? AND lr.status = 'approved'
+           ${deptFilterU.sql}
        ) lr ON lr.leave_type_id = lt.id
        WHERE lt.is_active = 1
        GROUP BY lt.id, lt.name
        ORDER BY lt.name ASC`,
-      [year, year]
+      params
     );
 
     res.json({ year, summary });
@@ -212,19 +221,25 @@ router.get("/monthly", ...guard, async (req, res) => {
   }
 
   try {
+    const deptFilterU = getDeptFilter(req, "u", true);
+    const params = [year];
+    if (deptFilterU.param) params.push(deptFilterU.param);
+
     const [monthly] = await pool.query(
       `SELECT
-         MONTH(submitted_at)                   AS month,
+         MONTH(lr.start_date)                 AS month,
          COUNT(*)                               AS total_requests,
-         COALESCE(SUM(total_days), 0)           AS total_days,
-         SUM(CASE WHEN status = 'approved'  THEN total_days ELSE 0 END) AS approved_days,
-         SUM(CASE WHEN status = 'rejected'  THEN 1 ELSE 0 END) AS rejected,
-         SUM(CASE WHEN status = 'pending'   THEN 1 ELSE 0 END) AS pending
-       FROM leave_requests
-       WHERE YEAR(submitted_at) = ?
-       GROUP BY MONTH(submitted_at)
+         COALESCE(SUM(lr.total_days), 0)        AS total_days,
+         SUM(CASE WHEN lr.status = 'approved'  THEN lr.total_days ELSE 0 END) AS approved_days,
+         SUM(CASE WHEN lr.status = 'rejected'  THEN 1 ELSE 0 END) AS rejected,
+         SUM(CASE WHEN lr.status = 'pending'   THEN 1 ELSE 0 END) AS pending
+       FROM leave_requests lr
+       JOIN users u ON lr.user_id = u.id
+       WHERE YEAR(lr.start_date) = ?
+       ${deptFilterU.sql}
+       GROUP BY MONTH(lr.start_date)
        ORDER BY month ASC`,
-      [year]
+      params
     );
 
     res.json({ year, monthly });
@@ -243,6 +258,10 @@ router.get("/employee-balances", ...guard, async (req, res) => {
   }
 
   try {
+    const deptFilterU = getDeptFilter(req, "u", true);
+    const params = [year];
+    if (deptFilterU.param) params.push(deptFilterU.param);
+
     const [employees] = await pool.query(
       `SELECT
          u.id AS user_id,
@@ -259,8 +278,9 @@ router.get("/employee-balances", ...guard, async (req, res) => {
        WHERE r.name = 'Employee'
          AND u.deleted_at IS NULL
          AND u.is_active = 1
+         ${deptFilterU.sql}
        ORDER BY u.full_name ASC`,
-      [year]
+      params
     );
 
     // Group by user
