@@ -83,7 +83,7 @@ export default function Departments({ onNavigate }) {
       <Header activePage="departments" onNavigate={onNavigate} />
 
       <main className="max-w-6xl mx-auto px-6 py-12 w-full flex-grow">
-        
+
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
@@ -150,8 +150,8 @@ export default function Departments({ onNavigate }) {
                     <span
                       className="px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase"
                       style={{
-                         backgroundColor: dept.is_active ? '#d1f2e8' : '#fde2e4',
-                         color: dept.is_active ? '#1a7f5a' : '#b5283d'
+                        backgroundColor: dept.is_active ? '#d1f2e8' : '#fde2e4',
+                        color: dept.is_active ? '#1a7f5a' : '#b5283d'
                       }}
                     >
                       {dept.is_active ? 'Active' : 'Inactive'}
@@ -182,7 +182,7 @@ export default function Departments({ onNavigate }) {
             <h3 className="mb-6 text-[28px] font-fredoka font-bold text-[#1f3747]">
               {isEditing ? 'Editing Department' : 'New Department'}
             </h3>
-            
+
             <form onSubmit={handleSave} className="flex flex-col gap-5">
               {errorOpts && (
                 <div className="p-4 bg-red-50 text-red-700 text-[14px] font-bold rounded-2xl border border-red-100">
@@ -227,15 +227,16 @@ export default function Departments({ onNavigate }) {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSaving || !currentDept.name.trim()}
-                  className="flex-1 rounded-full bg-[#3ea8e5] px-2 py-4 text-[15px] font-bold text-white shadow-[0_4px_12px_rgba(62,168,229,0.3)] hover:shadow-none hover:bg-[#3296d4] translate-y-0 hover:translate-y-px transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSaving || !(currentDept?.name || "").trim()}
+                  className="flex-1 rounded-full !px-2 !py-4 text-[15px] font-bold shadow-[0_4px_12px_rgba(62,168,229,0.3)] hover:shadow-none translate-y-0 hover:translate-y-px transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: '#3ea8e5', color: '#ffffff' }}
                 >
                   {isSaving ? (
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="w-5 h-5 animate-spin" /> Saving...
                     </div>
                   ) : (
-                    'Save Changes'
+                    isEditing ? 'Save Changes' : 'Add Department'
                   )}
                 </button>
               </div>
