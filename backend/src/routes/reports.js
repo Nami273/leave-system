@@ -188,7 +188,8 @@ router.get("/leave-summary", ...guard, async (req, res) => {
            JOIN users u ON lb.user_id = u.id
            JOIN roles r ON u.role_id = r.id
            WHERE lb.leave_type_id = lt.id AND lb.year = ? AND r.name = 'Employee'
-           ${deptFilterU.sql}
+             AND ((YEAR(CURDATE()) - YEAR(u.hire_date)) * 12 + (MONTH(CURDATE()) - MONTH(u.hire_date))) >= lt.min_service_months
+             ${deptFilterU.sql}
          ) AS total_allocated_days
        FROM leave_types lt
        LEFT JOIN (
