@@ -154,14 +154,16 @@ export default function RequestDetail({ onNavigate }) {
     </div>
   )
 
-  const { request, files = [], history = [], balance } = data
-  const statusStyle = STATUS_STYLES[request.status?.toLowerCase()] || STATUS_STYLES.pending
-  const { Icon, color: iconColor, bg: iconBg } = resolveLeaveTypeStyle(request.leave_type_icon, request.leave_type_color)
-  const canAct = !actionDone && (request.status === "pending" || request.status === "acknowledged")
+  const { request, files = [], history = [], balance } = data;
+  const statusStyle = STATUS_STYLES[request?.status?.toLowerCase()] || STATUS_STYLES.pending;
+  const { Icon, color: iconColor, bg: iconBg } = resolveLeaveTypeStyle(request?.leave_type_icon, request?.leave_type_color);
+  const canAct = !actionDone && (request?.status === "pending" || request?.status === "acknowledged");
 
   // Pagination
-  const totalPages = Math.ceil(history.length / PAGE_SIZE)
-  const pagedHistory = history.slice((histPage - 1) * PAGE_SIZE, histPage * PAGE_SIZE)
+  const totalPages = Math.ceil(history.length / PAGE_SIZE);
+  const pagedHistory = history.slice((histPage - 1) * PAGE_SIZE, histPage * PAGE_SIZE);
+
+  const activeTab = (request?.status === "pending" || request?.status === "acknowledged") ? "approvals" : "history";
 
   return (
     <div style={{ minHeight: "100vh", background: "#eef2f9", display: "flex", flexDirection: "column" }}>
@@ -169,7 +171,7 @@ export default function RequestDetail({ onNavigate }) {
         <RejectModal onConfirm={handleReject} onCancel={() => setShowRejectModal(false)} loading={actionLoading === "reject"} />
       )}
 
-      <Header activePage="approvals" onNavigate={onNavigate} />
+      <Header activePage={activeTab} onNavigate={onNavigate} />
 
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "36px 24px 60px", width: "100%" }}>
 

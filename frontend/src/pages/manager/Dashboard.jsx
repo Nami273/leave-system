@@ -408,7 +408,7 @@ export default function Dashboard({ onNavigate }) {
                 <p className="text-[14px] font-medium text-[#94a3b8]">Your team's latest activity</p>
               </div>
               <button
-                onClick={() => onNavigate && onNavigate("approvals")}
+                onClick={() => onNavigate && onNavigate("history")}
                 className="text-[14px] font-bold text-[#5e6c7e] hover:text-[#3f4a51] transition-colors pt-2 cursor-pointer"
               >
                 View all
@@ -429,7 +429,11 @@ export default function Dashboard({ onNavigate }) {
                     : `${formatDateShort(req.start_date)} – ${formatDateShort(req.end_date)}`
 
                   return (
-                    <div key={req.id} className="flex items-center gap-4 p-4 bg-[#f9fafb] rounded-[22px] hover:bg-[#f1f5f9] transition-colors">
+                    <div 
+                      key={req.id} 
+                      onClick={() => onNavigate && onNavigate(`requests/${req.id}`)}
+                      className="flex items-center gap-4 p-4 bg-[#f9fafb] rounded-[22px] hover:bg-[#f1f5f9] transition-all cursor-pointer hover:scale-[1.005] active:scale-[0.995]"
+                    >
                       {/* Avatar */}
                       <div className="w-11 h-11 rounded-full bg-sky-100 flex items-center justify-center shrink-0 text-sky-600 font-bold text-[15px]">
                         {(req.full_name || "?")[0].toUpperCase()}

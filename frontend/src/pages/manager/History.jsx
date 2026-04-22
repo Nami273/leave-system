@@ -47,7 +47,7 @@ const ACCENT = {
 }
 
 // ─── History Row ──────────────────────────────────────────────────────────────
-function HistoryRow({ req }) {
+function HistoryRow({ req, onNavigate }) {
   const { Icon, color, bg } = resolveLeaveTypeStyle(req.leave_type_icon, req.leave_type_color)
   const style  = STATUS_STYLES[req.status?.toLowerCase()] || STATUS_STYLES.pending
   const accent = ACCENT[req.status?.toLowerCase()] || "#e2e8f0"
@@ -57,7 +57,10 @@ function HistoryRow({ req }) {
     : `${formatDateShort(req.start_date)} – ${formatDateShort(req.end_date)}`
 
   return (
-    <div className="bg-white rounded-[24px] shadow-sm flex items-center gap-4 px-5 py-4 hover:shadow-md transition-shadow relative overflow-hidden">
+    <div 
+      onClick={() => onNavigate && onNavigate(`requests/${req.id}`)}
+      className="bg-white rounded-[24px] shadow-sm flex items-center gap-4 px-5 py-4 hover:shadow-md transition-all relative overflow-hidden cursor-pointer hover:scale-[1.005] active:scale-[0.995]"
+    >
       {/* Left accent bar */}
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-[24px]" style={{ backgroundColor: accent }} />
 
@@ -270,7 +273,7 @@ export default function History({ onNavigate }) {
               <p className="text-[#94a3b8] font-medium">No records found.</p>
             </div>
           ) : (
-            filtered.map(req => <HistoryRow key={req.id} req={req} />)
+            filtered.map(req => <HistoryRow key={req.id} req={req} onNavigate={onNavigate} />)
           )}
         </div>
       </main>
