@@ -19,10 +19,11 @@ router.post("/login", async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT u.id, u.username, u.full_name, u.email, u.password_hash,
-              u.is_active, u.department_id, r.id AS role_id, r.name AS role_name
+      `SELECT u.id, u.username, u.full_name, u.email, u.phone, u.password_hash,
+              u.is_active, u.department_id, d.name AS department, r.id AS role_id, r.name AS role_name
        FROM users u
        JOIN roles r ON u.role_id = r.id
+       LEFT JOIN departments d ON u.department_id = d.id
        WHERE u.email = ?
          AND u.deleted_at IS NULL`,
       [email],
@@ -68,7 +69,9 @@ router.post("/login", async (req, res) => {
         username: user.username,
         full_name: user.full_name,
         email: user.email,
+        phone: user.phone,
         department_id: user.department_id,
+        department: user.department,
         role_id: user.role_id,
         role: user.role_name,
       },
@@ -190,7 +193,7 @@ router.post("/forgot-password", async (req, res) => {
     );
 
     const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password/${token}`;
-    
+
     const htmlBody = `
       <h3>Hello ${user.full_name},</h3>
       <p>You requested a password reset. Please click the link below to set a new password:</p>
@@ -199,7 +202,7 @@ router.post("/forgot-password", async (req, res) => {
     `;
 
     await sendEmail(email, "Password Reset Request", `Reset link: ${resetLink}`, htmlBody);
-    
+
     res.json({ message: "If that email exists, a reset link has been sent." });
   } catch (err) {
     console.error("Forgot password error:", err);

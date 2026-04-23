@@ -1,7 +1,7 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "../../contexts/AuthContext"
 import api from "../../services/api"
-import { ShieldAlert, User, KeyRound, Save, BadgeCheck, Bell, Smartphone, Lock, LogOut } from "lucide-react"
+import { ShieldAlert, User, KeyRound, Save, BadgeCheck, Bell, Smartphone, Lock, LogOut, ChevronDown } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 export default function Settings({ onNavigate, HeaderComponent }) {
@@ -18,8 +18,54 @@ export default function Settings({ onNavigate, HeaderComponent }) {
     username: user?.username || "",
     full_name: user?.full_name || "",
     email: user?.email || "",
-    phone: user?.phone || ""
+    department: user?.department || ""
   })
+
+  // Phone Configuration
+  const PHONE_PREFIXES = [
+    { code: '+66', label: '+66 (TH)', max: 9, placeholder: "893948271" },
+    { code: '+1', label: '+1 (US)', max: 10, placeholder: "5550000000" },
+    { code: '+44', label: '+44 (UK)', max: 11, placeholder: "7000000000" },
+    { code: '+81', label: '+81 (JP)', max: 11, placeholder: "9000000000" },
+    { code: '+65', label: '+65 (SG)', max: 8, placeholder: "80000000" }
+  ];
+
+  const [phoneState, setPhoneState] = useState({
+    prefix: '+66',
+    digits: ''
+  })
+
+  useEffect(() => {
+    // Fetch latest user data to ensure phone/department are populated
+    api.get("/users/me")
+      .then(res => {
+        const u = res.data.user
+
+        // Parse phone: "+66 812345678" -> prefix: "+66", digits: "812345678"
+        let pref = '+66'
+        let digs = u.phone || ""
+        if (digs.includes(' ')) {
+          [pref, digs] = digs.split(' ')
+        } else if (digs.startsWith('+')) {
+          const foundPrefix = PHONE_PREFIXES.find(p => digs.startsWith(p.code))
+          if (foundPrefix) {
+            pref = foundPrefix.code
+            digs = digs.substring(pref.length).trim()
+          }
+        }
+
+        setProfileData({
+          username: u.username || "",
+          full_name: u.full_name || "",
+          email: u.email || "",
+          phone: u.phone || "", // keeping this as fallback or for reference
+          department: u.department || ""
+        })
+        setPhoneState({ prefix: pref, digits: digs })
+        updateUser(u)
+      })
+      .catch(err => console.error("Failed to fetch user data:", err))
+  }, [])
 
   const [passData, setPassData] = useState({
     current_password: "",
@@ -38,9 +84,15 @@ export default function Settings({ onNavigate, HeaderComponent }) {
     setSuccessMsg("")
     setErrMsg("")
     try {
-      const res = await api.put("/users/me", profileData)
+      const finalPhone = phoneState.digits ? `${phoneState.prefix} ${phoneState.digits}` : ""
+      const payload = {
+        username: profileData.username,
+        full_name: profileData.full_name,
+        email: profileData.email,
+        phone: finalPhone
+      }
+      const res = await api.put("/users/me", payload)
       setSuccessMsg("Profile updated successfully!")
-      // Update local context
       updateUser(res.data.user)
     } catch (err) {
       setErrMsg(err.response?.data?.message || "Failed to update profile.")
@@ -155,16 +207,47 @@ export default function Settings({ onNavigate, HeaderComponent }) {
                   </div>
                   <div>
                     <label className="block text-[12px] font-[800] tracking-widest uppercase text-[#94a3b8] mb-2">Phone Number</label>
-                    <div className="relative">
-                      <Smartphone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
-                      <input
-                        type="tel"
-                        value={profileData.phone}
-                        onChange={e => setProfileData({ ...profileData, phone: e.target.value })}
-                        className="w-full h-12 pl-12 pr-4 bg-[#f4f7fb] rounded-[16px] text-[14px] font-medium text-[#3f4a51] focus:outline-none focus:ring-2 focus:ring-[#1c355e]/20"
-                        placeholder="+1234567890"
-                      />
+                    <div className="flex gap-2">
+                      <div className="relative w-[110px] flex-shrink-0">
+                        <select
+                          value={phoneState.prefix}
+                          onChange={(e) => setPhoneState(p => ({ ...p, prefix: e.target.value, digits: '' }))}
+                          className="w-full h-12 pl-4 pr-8 bg-[#f4f7fb] rounded-[16px] text-[14px] font-bold text-[#3f4a51] border-none outline-none appearance-none cursor-pointer focus:ring-2 focus:ring-[#1c355e]/20"
+                        >
+                          {PHONE_PREFIXES.map(pf => (
+                            <option key={pf.code} value={pf.code}>{pf.label}</option>
+                          ))}
+                        </select>
+                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] pointer-events-none" />
+                      </div>
+                      <div className="relative flex-grow">
+                        <Smartphone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+                        <input
+                          type="text"
+                          value={phoneState.digits}
+                          onChange={(e) => {
+                            const config = PHONE_PREFIXES.find(p => p.code === phoneState.prefix) || PHONE_PREFIXES[0]
+                            let val = e.target.value.replace(/\D/g, '')
+                            if (phoneState.prefix === '+66') val = val.replace(/^0+/, '')
+                            if (val.length <= config.max) {
+                              setPhoneState(p => ({ ...p, digits: val }))
+                            }
+                          }}
+                          className="w-full h-12 pl-12 pr-4 bg-[#f4f7fb] rounded-[16px] text-[14px] font-medium text-[#3f4a51] focus:outline-none focus:ring-2 focus:ring-[#1c355e]/20"
+                          placeholder={(PHONE_PREFIXES.find(p => p.code === phoneState.prefix) || PHONE_PREFIXES[0]).placeholder}
+                        />
+                      </div>
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-[800] tracking-widest uppercase text-[#94a3b8] mb-2">Department</label>
+                    <input
+                      type="text"
+                      value={profileData.department || "General"}
+                      readOnly
+                      className="w-full h-12 px-4 bg-[#f4f7fb] rounded-[16px] text-[14px] font-medium text-[#94a3b8] cursor-not-allowed outline-none"
+                    />
+                    <p className="text-[11px] text-[#94a3b8] mt-1.5 ml-1 italic">* Contact HR to change your department.</p>
                   </div>
                 </div>
                 <div className="mt-8 flex justify-end gap-3">
@@ -199,35 +282,16 @@ export default function Settings({ onNavigate, HeaderComponent }) {
                 <p className="text-[#64748b] text-[15px] font-medium mb-6">Manage how you receive alerts and updates.</p>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border border-[#eef2f9] rounded-[20px] bg-[#f8fafc]">
+                  <div className="flex items-center justify-between p-5 border-2 border-[#eef2f9] rounded-[24px] bg-[#f8fafc]">
                     <div>
-                      <p className="font-bold text-[14px] text-[#2d3e50] mb-0.5">Email Notifications</p>
-                      <p className="text-[12px] text-[#94a3b8] font-medium">Receive direct emails about your request status</p>
+                      <p className="font-bold text-[15px] text-[#2d3e50] mb-0.5">In-App Alerts</p>
+                      <p className="text-[12px] text-[#94a3b8] font-medium">Receive real-time notifications for status updates and comments.</p>
                     </div>
-                    <div className="w-12 h-6 bg-[#16a34a] rounded-full relative cursor-pointer">
-                      <div className="w-4 h-4 bg-white rounded-full absolute top-1 right-1"></div>
+                    <div className="w-12 h-6 bg-[#16a34a] rounded-full relative cursor-pointer shadow-inner">
+                      <div className="w-4 h-4 bg-white rounded-full absolute top-1 right-1 shadow-sm"></div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border border-[#eef2f9] rounded-[20px]">
-                    <div>
-                      <p className="font-bold text-[14px] text-[#2d3e50] mb-0.5">In-App Alerts</p>
-                      <p className="text-[12px] text-[#94a3b8] font-medium">Get real-time pings when your manager approves time off</p>
-                    </div>
-                    <div className="w-12 h-6 bg-[#16a34a] rounded-full relative cursor-pointer">
-                      <div className="w-4 h-4 bg-white rounded-full absolute top-1 right-1"></div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 border border-[#eef2f9] rounded-[20px]">
-                    <div>
-                      <p className="font-bold text-[14px] text-[#2d3e50] mb-0.5">Weekly Digest</p>
-                      <p className="text-[12px] text-[#94a3b8] font-medium">A summary of team availability for the upcoming week</p>
-                    </div>
-                    <div className="w-12 h-6 bg-[#cbd5e1] rounded-full relative cursor-pointer">
-                      <div className="w-4 h-4 bg-white rounded-full absolute top-1 left-1"></div>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
