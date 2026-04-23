@@ -11,6 +11,12 @@ const pool = require('../db');
  */
 async function createNotification({ user_id, title, message, type, reference_id }) {
     try {
+        // Check if user has notifications enabled
+        const [users] = await pool.query('SELECT notifications_enabled FROM users WHERE id = ?', [user_id]);
+        if (users.length > 0 && users[0].notifications_enabled === 0) {
+            return true; // Notification disabled by user, but return true as "handled"
+        }
+
         await pool.query(
             'INSERT INTO notifications (user_id, title, message, type, reference_id) VALUES (?, ?, ?, ?, ?)',
             [user_id, title, message, type, reference_id]

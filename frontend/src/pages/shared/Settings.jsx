@@ -12,6 +12,7 @@ export default function Settings({ onNavigate, HeaderComponent }) {
   const [activeTab, setActiveTab] = useState("profile")
   const [successMsg, setSuccessMsg] = useState("")
   const [errMsg, setErrMsg] = useState("")
+  const [notifEnabled, setNotifEnabled] = useState(true)
 
   // Form State
   const [profileData, setProfileData] = useState({
@@ -62,6 +63,7 @@ export default function Settings({ onNavigate, HeaderComponent }) {
           department: u.department || ""
         })
         setPhoneState({ prefix: pref, digits: digs })
+        setNotifEnabled(!!u.notifications_enabled)
         updateUser(u)
       })
       .catch(err => console.error("Failed to fetch user data:", err))
@@ -79,6 +81,20 @@ export default function Settings({ onNavigate, HeaderComponent }) {
     navigate('/login')
   }
 
+  const handleNotifToggle = async () => {
+    const newValue = !notifEnabled
+    setNotifEnabled(newValue)
+    try {
+      await api.put("/users/me", { notifications_enabled: newValue ? 1 : 0 })
+      // context update (optional since not critical for UI here but good for sync)
+      updateUser({ ...user, notifications_enabled: newValue ? 1 : 0 })
+    } catch (err) {
+      console.error("Failed to update notification settings", err)
+      // revert on fail
+      setNotifEnabled(!newValue)
+    }
+  }
+
   const handleProfileSave = async (e) => {
     e.preventDefault()
     setSuccessMsg("")
@@ -89,7 +105,8 @@ export default function Settings({ onNavigate, HeaderComponent }) {
         username: profileData.username,
         full_name: profileData.full_name,
         email: profileData.email,
-        phone: finalPhone
+        phone: finalPhone,
+        notifications_enabled: notifEnabled ? 1 : 0
       }
       const res = await api.put("/users/me", payload)
       setSuccessMsg("Profile updated successfully!")
@@ -250,9 +267,10 @@ export default function Settings({ onNavigate, HeaderComponent }) {
                     <p className="text-[11px] text-[#94a3b8] mt-1.5 ml-1 italic">* Contact HR to change your department.</p>
                   </div>
                 </div>
-                <div className="mt-8 flex justify-end gap-3">
-                  <button type="submit" className="px-6 py-3 bg-[#1c355e] text-white rounded-[16px] text-[14px] font-bold hover:bg-[#122340] transition-colors flex items-center gap-2">
-                    <Save size={18} /> Save Changes
+                <div className="mt-12 pt-6 border-t border-[#f1f5f9] flex flex-col items-end gap-4">
+                  <p className="text-[13px] text-[#64748b] font-medium italic"></p>
+                  <button type="submit" className="!px-10 !py-4 !bg-[#1c355e] text-white rounded-[20px] text-[16px] font-bold hover:bg-[#122340] transition-all transform active:scale-95 shadow-xl shadow-[#1c355e]/25 flex items-center gap-3">
+                    <BadgeCheck size={22} strokeWidth={2.5} /> Confirm and Save Changes
                   </button>
                 </div>
               </form>
@@ -287,9 +305,13 @@ export default function Settings({ onNavigate, HeaderComponent }) {
                       <p className="font-bold text-[15px] text-[#2d3e50] mb-0.5">In-App Alerts</p>
                       <p className="text-[12px] text-[#94a3b8] font-medium">Receive real-time notifications for status updates and comments.</p>
                     </div>
-                    <div className="w-12 h-6 bg-[#16a34a] rounded-full relative cursor-pointer shadow-inner">
-                      <div className="w-4 h-4 bg-white rounded-full absolute top-1 right-1 shadow-sm"></div>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleNotifToggle}
+                      className={`w-12 h-6 rounded-full relative transition-all duration-300 shadow-inner ${notifEnabled ? '!bg-[#16a34a]' : '!bg-[#cbd5e1]'}`}
+                    >
+                      <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all duration-300 shadow-sm ${notifEnabled ? 'right-1' : 'left-1'}`}></div>
+                    </button>
                   </div>
 
                 </div>

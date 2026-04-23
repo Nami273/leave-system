@@ -14,6 +14,7 @@ const USER_SELECT = `
   u.phone,
   u.hire_date,
   u.is_active,
+  u.notifications_enabled,
   u.created_at,
   u.updated_at,
   u.role_id,
@@ -121,7 +122,7 @@ router.put("/me/password", verifyToken, async (req, res) => {
 // Protected: verifyToken only.
 // NOTE: must be declared BEFORE PUT /:id.
 router.put("/me", verifyToken, async (req, res) => {
-  const { full_name, email, username, phone } = req.body;
+  const { full_name, email, username, phone, notifications_enabled } = req.body;
 
   // Only pick fields that were actually supplied in the request body
   const updates = {};
@@ -129,10 +130,11 @@ router.put("/me", verifyToken, async (req, res) => {
   if (email !== undefined) updates.email = email;
   if (username !== undefined) updates.username = username;
   if (phone !== undefined) updates.phone = phone;
+  if (notifications_enabled !== undefined) updates.notifications_enabled = notifications_enabled;
 
   if (Object.keys(updates).length === 0) {
     return res.status(400).json({
-      message: "At least one field (full_name, email, username, phone) is required.",
+      message: "At least one field (full_name, email, username, phone, notifications_enabled) is required.",
     });
   }
 
