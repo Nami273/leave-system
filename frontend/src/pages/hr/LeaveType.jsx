@@ -88,7 +88,7 @@ export default function LeaveType({ onNavigate }) {
     reqManager: true,
     carryover: false,
     reqAttachment: false,
-    department_id: ''
+    department_ids: []
   })
 
   useEffect(() => {
@@ -125,7 +125,7 @@ export default function LeaveType({ onNavigate }) {
         reqManager: t.requires_manager_approval !== 0,
         carryover: !!t.carryover,
         service: t.min_service_months || 0,
-        department_id: t.department_id
+        department_ids: t.department_ids || []
       }))
       setLeaveTypes(formatted)
     } catch (err) {
@@ -185,7 +185,7 @@ export default function LeaveType({ onNavigate }) {
       reqManager: leave.reqManager !== false,
       carryover: !!leave.carryover,
       reqAttachment: leave.reqAttachment,
-      department_id: leave.department_id || ''
+      department_ids: leave.department_ids || []
     })
     setEditingId(leave.id)
     setIsCreating(true)
@@ -193,7 +193,7 @@ export default function LeaveType({ onNavigate }) {
 
   const handleSubmit = async () => {
     if (!form.name.trim()) return alert("Leave Name is required")
-    if (isHR && !form.department_id) return alert("Please select a department scope")
+    if (isHR && form.department_ids.length === 0) return alert("Please select at least one department scope")
 
     const payload = {
       name: form.name,
@@ -205,7 +205,7 @@ export default function LeaveType({ onNavigate }) {
       requires_attachment: form.reqAttachment,
       requires_manager_approval: form.reqManager,
       carryover: form.carryover,
-      department_id: form.department_id || null
+      department_ids: form.department_ids
     }
 
     try {
@@ -224,7 +224,7 @@ export default function LeaveType({ onNavigate }) {
             reqManager: updated.requires_manager_approval !== 0,
             carryover: !!updated.carryover,
             service: updated.min_service_months || 0,
-            department_id: updated.department_id
+            department_ids: updated.department_ids || form.department_ids
           } : leave
         ))
       } else {
@@ -241,24 +241,24 @@ export default function LeaveType({ onNavigate }) {
           reqManager: created.requires_manager_approval !== 0,
           carryover: !!created.carryover,
           service: created.min_service_months || 0,
-          department_id: created.department_id
+          department_ids: created.department_ids || form.department_ids
         }])
       }
 
       setIsCreating(false)
       setEditingId(null)
       setForm({
-        name: '', description: '', days: '', service: '', icon: 'umbrella', color: 'blue', reqManager: true, carryover: false, reqAttachment: false, department_id: ''
+        name: '', description: '', days: '', service: '', icon: 'umbrella', color: 'blue', reqManager: true, carryover: false, reqAttachment: false, department_ids: []
       })
     } catch (err) {
       alert(err.response?.data?.message || 'Action failed')
     }
   }
 
-  const getDeptName = (id) => {
-    if (!id) return "Global Policy"
-    const dept = departments.find(d => d.id === id)
-    return dept ? dept.name : "Assigned Dept"
+  const getDeptNames = (ids) => {
+    if (!ids || ids.length === 0) return "Global Policy"
+    const names = ids.map(id => departments.find(d => d.id === id)?.name).filter(Boolean)
+    return names.length > 0 ? names.join(", ") : "Multi-Dept"
   }
 
   return (
@@ -284,7 +284,7 @@ export default function LeaveType({ onNavigate }) {
                 onClick={() => {
                   setIsCreating(true)
                   if (isHR && departments.length === 1) {
-                    setForm(prev => ({ ...prev, department_id: departments[0].id }))
+                    setForm(prev => ({ ...prev, department_ids: [departments[0].id] }))
                   }
                 }}
                 className="text-white !px-8 !py-4 rounded-full font-bold flex items-center gap-2 transition-colors mt-24"
@@ -321,9 +321,9 @@ export default function LeaveType({ onNavigate }) {
                       <h3 className={`text-[24px] font-fredoka font-bold mb-1 ${colors.title}`}>{leave.name}</h3>
 
                       <div className="flex items-center gap-1 mb-4">
-                        {leave.department_id ? <Building2 size={12} className={colors.iconColor} /> : <Globe size={12} className={colors.iconColor} />}
+                        {leave.department_ids && leave.department_ids.length > 0 ? <Building2 size={12} className={colors.iconColor} /> : <Globe size={12} className={colors.iconColor} />}
                         <span className={`text-[11px] font-bold uppercase tracking-wider ${colors.iconColor}`}>
-                          {getDeptName(leave.department_id)}
+                          {getDeptNames(leave.department_ids)}
                         </span>
                       </div>
 
@@ -348,7 +348,7 @@ export default function LeaveType({ onNavigate }) {
                   onClick={() => {
                     setIsCreating(true)
                     if (isHR && departments.length === 1) {
-                      setForm(prev => ({ ...prev, department_id: departments[0].id }))
+                      setForm(prev => ({ ...prev, department_ids: [departments[0].id] }))
                     }
                   }}
                   className="rounded-[32px] border-2 border-dashed border-[#b0b8c1] flex flex-col items-center justify-center min-h-[380px] cursor-pointer hover:bg-white hover:border-[#a0xbsd1] transition-all group"
@@ -386,28 +386,46 @@ export default function LeaveType({ onNavigate }) {
                 </div>
 
                 <div>
-                  <label className="block text-[12px] font-bold text-[#4c6367] tracking-wider uppercase mb-2">Scope (Department)</label>
-                  <select
-                    className="w-full bg-[#dee4ec] text-[#1f3747] rounded-full px-5 py-3 outline-none focus:ring-2 focus:ring-[#a3dfff] font-medium appearance-none"
-                    value={form.department_id}
-                    onChange={(e) => setForm({ ...form, department_id: e.target.value })}
-                  >
+                  <label className="block text-[12px] font-bold text-[#4c6367] tracking-wider uppercase mb-2">Scope (Departments)</label>
+                  <div className="bg-[#dee4ec] rounded-[24px] p-4 max-h-[150px] overflow-y-auto">
                     {isSuperAdmin && (
-                      <option value="">Global - All Employees</option>
+                      <div
+                        className="flex items-center gap-3 mb-3 cursor-pointer"
+                        onClick={() => setForm({ ...form, department_ids: [] })}
+                      >
+                        <div className={`w-5 h-5 rounded border-2 border-[#4c6367] flex items-center justify-center ${form.department_ids.length === 0 ? 'bg-[#4c6367]' : 'bg-transparent'}`}>
+                          {form.department_ids.length === 0 && <Plus size={14} className="text-white rotate-45" />}
+                        </div>
+                        <span className="text-[14px] font-bold text-[#1f3747]">Global - All Employees</span>
+                      </div>
                     )}
-                    {!isSuperAdmin && !isHR && (
-                      <option value="">{user?.department_id ? 'My Department' : 'Global'}</option>
-                    )}
-                    {departments.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                    {isHR && departments.length === 0 && (
-                      <option value="" disabled>No departments assigned</option>
-                    )}
-                    {isHR && departments.length > 0 && !form.department_id && (
-                      <option value="" disabled>Select Department</option>
-                    )}
-                  </select>
+                    <div className="grid grid-cols-1 gap-2">
+                      {departments.map(d => {
+                        const isChecked = form.department_ids.includes(d.id)
+                        return (
+                          <div
+                            key={d.id}
+                            className="flex items-center gap-3 cursor-pointer group"
+                            onClick={() => {
+                              if (isChecked) {
+                                setForm({ ...form, department_ids: form.department_ids.filter(id => id !== d.id) })
+                              } else {
+                                setForm({ ...form, department_ids: [...form.department_ids, d.id] })
+                              }
+                            }}
+                          >
+                            <div className={`w-5 h-5 rounded border-2 border-[#4c6367] flex items-center justify-center transition-colors ${isChecked ? 'bg-[#4c6367]' : 'bg-transparent group-hover:border-[#006dae]'}`}>
+                              {isChecked && <Plus size={14} className="text-white translate-y-[0px] rotate-45" style={{ transform: 'rotate(0deg)' }} />}
+                            </div>
+                            <span className={`text-[14px] font-semibold ${isChecked ? 'text-[#1f3747]' : 'text-[#64748b]'}`}>{d.name}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  {isHR && departments.length === 0 && (
+                    <p className="text-[12px] text-red-500 mt-2">No departments assigned to your account.</p>
+                  )}
                 </div>
 
                 <div>
@@ -535,7 +553,7 @@ export default function LeaveType({ onNavigate }) {
                   setIsCreating(false)
                   setEditingId(null)
                   setForm({
-                    name: '', description: '', days: '', service: '', icon: 'umbrella', color: 'blue', reqManager: true, carryover: false, reqAttachment: false, department_id: ''
+                    name: '', description: '', days: '', service: '', icon: 'umbrella', color: 'blue', reqManager: true, carryover: false, reqAttachment: false, department_ids: []
                   })
                 }}
                 className="!bg-gray-800 text-white !px-8 !py-4 rounded-full font-bold hover:bg-gray-700 transition-colors"

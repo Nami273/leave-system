@@ -8,8 +8,7 @@ const LT_SELECT = `
   id, name, default_days_per_year, description,
   color_type, icon_name, requires_attachment,
   requires_manager_approval, carryover,
-  is_active, min_service_months, created_at,
-  department_id
+  is_active, min_service_months, created_at
 `;
 
 // GET / — Get all active leave types (all logged-in users)
@@ -22,7 +21,6 @@ router.get("/", verifyToken, async (req, res) => {
     if (req.user.role === "Super Admin") {
       // Super Admin sees everything
     } else if (req.user.role === "HR") {
-      // HR sees Global types (NULL) AND types for their assigned departments
       const [hrDepts] = await pool.query(
         "SELECT department_id FROM hr_departments WHERE user_id = ?",
         [req.user.id]
@@ -30,23 +28,41 @@ router.get("/", verifyToken, async (req, res) => {
       const deptIds = hrDepts.map((d) => d.department_id);
 
       if (deptIds.length > 0) {
-        query += " AND (department_id IS NULL OR department_id IN (?))";
+        query += ` AND (
+          NOT EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = id)
+          OR
+          EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = id AND ltd.department_id IN (?))
+        )`;
         params.push(deptIds);
       } else {
-        query += " AND department_id IS NULL";
+        query += " AND NOT EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = id)";
       }
     } else {
-      // Regular users and Managers see Global types AND types for their own department
-      if (req.user.department_id) {
-        query += " AND (department_id IS NULL OR department_id = ?)";
-        params.push(req.user.department_id);
+      const userDeptId = req.user.department_id;
+      if (userDeptId) {
+        query += ` AND (
+          NOT EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = id)
+          OR
+          EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = id AND ltd.department_id = ?)
+        )`;
+        params.push(userDeptId);
       } else {
-        query += " AND department_id IS NULL";
+        query += " AND NOT EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = id)";
       }
     }
 
     query += " ORDER BY name ASC";
     const [rows] = await pool.query(query, params);
+
+    // Fetch department_ids for each leave type
+    for (const row of rows) {
+      const [ltdRows] = await pool.query(
+        "SELECT department_id FROM leave_type_departments WHERE leave_type_id = ?",
+        [row.id]
+      );
+      row.department_ids = ltdRows.map(r => r.department_id);
+    }
+
     res.json({ leaveTypes: rows });
   } catch (err) {
     console.error("Get leave types error:", err);
@@ -70,7 +86,7 @@ router.post(
       requires_manager_approval,
       carryover,
       min_service_months,
-      department_id,
+      department_ids, // array of IDs
     } = req.body;
 
     if (!name || name.trim() === "") {
@@ -80,41 +96,31 @@ router.post(
     try {
       // Scoping Permission Check
       if (req.user.role === "HR") {
-        if (!department_id) {
+        if (!department_ids || !Array.isArray(department_ids) || department_ids.length === 0) {
           return res.status(403).json({
-            message: "HR can only create department-scoped leave types.",
+            message: "HR can only create department-scoped leave types (multi-department support enabled).",
           });
         }
-        const [check] = await pool.query(
-          "SELECT 1 FROM hr_departments WHERE user_id = ? AND department_id = ?",
-          [req.user.id, department_id]
+        const [managedDepts] = await pool.query(
+          "SELECT department_id FROM hr_departments WHERE user_id = ?",
+          [req.user.id]
         );
-        if (check.length === 0) {
-          return res.status(403).json({
-            message:
-              "You do not have permission to manage this department's leave types.",
-          });
+        const managedIds = new Set(managedDepts.map(d => d.department_id));
+        for (const deptId of department_ids) {
+          if (!managedIds.has(deptId)) {
+            return res.status(403).json({
+              message: `You do not have permission to manage department ID: ${deptId}.`,
+            });
+          }
         }
-      }
-
-      // Unique check scoped to department (NULL-safe equality)
-      const [existing] = await pool.query(
-        "SELECT id FROM leave_types WHERE name = ? AND (department_id <=> ?)",
-        [name.trim(), department_id ?? null]
-      );
-
-      if (existing.length > 0) {
-        return res
-          .status(409)
-          .json({ message: "A leave type with this name already exists in this scope." });
       }
 
       const id = uuidv4();
 
       await pool.query(
         `INSERT INTO leave_types
-           (id, name, default_days_per_year, description, color_type, icon_name, requires_attachment, requires_manager_approval, carryover, min_service_months, department_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           (id, name, default_days_per_year, description, color_type, icon_name, requires_attachment, requires_manager_approval, carryover, min_service_months)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           name.trim(),
@@ -126,23 +132,33 @@ router.post(
           requires_manager_approval !== false ? 1 : 0,
           carryover ? 1 : 0,
           min_service_months ?? 0,
-          department_id ?? null,
         ],
       );
+
+      // Insert into junction table
+      if (department_ids && Array.isArray(department_ids) && department_ids.length > 0) {
+        const ltdInserts = department_ids.map(deptId => [id, deptId]);
+        await pool.query(
+          "INSERT INTO leave_type_departments (leave_type_id, department_id) VALUES ?",
+          [ltdInserts]
+        );
+      }
 
       const [created] = await pool.query(
         `SELECT ${LT_SELECT} FROM leave_types WHERE id = ?`,
         [id],
       );
 
-      // Auto-provision balances for eligible active users (now scoped by department)
+      // Auto-provision balances for eligible active users (now scoped by multiple departments)
       const currentYear = new Date().getFullYear();
       let userQuery = "SELECT u.id, u.hire_date FROM users u JOIN roles r ON u.role_id = r.id WHERE u.is_active = 1 AND r.name = 'Employee'";
       let userParams = [];
 
-      if (department_id) {
-        userQuery += " AND u.department_id = ?";
-        userParams.push(department_id);
+      if (department_ids && department_ids.length > 0) {
+        userQuery += " AND u.department_id IN (?)";
+        userParams.push(department_ids);
+      } else {
+        // Global: provision for everyone? Usually yes, if it's Global.
       }
 
       const [users] = await pool.query(userQuery, userParams);
@@ -172,9 +188,12 @@ router.post(
         }
       }
 
+      const createdLT = created[0];
+      createdLT.department_ids = department_ids || [];
+
       res.status(201).json({
         message: "Leave type created successfully.",
-        leaveType: created[0],
+        leaveType: createdLT,
       });
     } catch (err) {
       console.error("Create leave type error:", err);
@@ -201,12 +220,12 @@ router.put(
       carryover,
       min_service_months,
       is_active,
-      department_id,
+      department_ids, // array
     } = req.body;
 
     try {
       const [existing] = await pool.query(
-        "SELECT id, department_id FROM leave_types WHERE id = ?",
+        "SELECT id FROM leave_types WHERE id = ?",
         [id],
       );
 
@@ -214,19 +233,27 @@ router.put(
         return res.status(404).json({ message: "Leave type not found." });
       }
 
-      const lt = existing[0];
-
       // Permission Check
       if (req.user.role === "HR") {
-        if (!lt.department_id) {
+        const [ltdRows] = await pool.query(
+          "SELECT department_id FROM leave_type_departments WHERE leave_type_id = ?",
+          [id]
+        );
+        if (ltdRows.length === 0) {
           return res.status(403).json({ message: "HR cannot modify global leave types." });
         }
-        const [check] = await pool.query(
-          "SELECT 1 FROM hr_departments WHERE user_id = ? AND department_id = ?",
-          [req.user.id, lt.department_id]
+
+        const [managedDepts] = await pool.query(
+          "SELECT department_id FROM hr_departments WHERE user_id = ?",
+          [req.user.id]
         );
-        if (check.length === 0) {
-          return res.status(403).json({ message: "You do not have permission to manage this department's leave types." });
+        const managedIds = new Set(managedDepts.map(d => d.department_id));
+
+        // Must manage all currently assigned departments
+        for (const r of ltdRows) {
+          if (!managedIds.has(r.department_id)) {
+            return res.status(403).json({ message: "You do not have permission to manage this leave type as it belongs to at least one department you don't manage." });
+          }
         }
       }
 
@@ -237,15 +264,15 @@ router.put(
         if (name.trim() === "") {
           return res.status(400).json({ message: "name cannot be empty." });
         }
-        const targetDept = department_id !== undefined ? department_id : lt.department_id;
+        // Simplified unique check (can be improved to check across departments if needed)
         const [duplicate] = await pool.query(
-          "SELECT id FROM leave_types WHERE name = ? AND id != ? AND (department_id <=> ?)",
-          [name.trim(), id, targetDept ?? null],
+          "SELECT id FROM leave_types WHERE name = ? AND id != ?",
+          [name.trim(), id],
         );
         if (duplicate.length > 0) {
           return res
             .status(409)
-            .json({ message: "A leave type with this name already exists in this scope." });
+            .json({ message: "A leave type with this name already exists." });
         }
         fields.push("name = ?"); values.push(name.trim());
       }
@@ -260,30 +287,65 @@ router.put(
       if (min_service_months !== undefined) { fields.push("min_service_months = ?"); values.push(min_service_months); }
       if (is_active !== undefined) { fields.push("is_active = ?"); values.push(is_active ? 1 : 0); }
 
-      // Moving a leave type between departments (Super Admin only usually, but let's provide the field)
-      if (department_id !== undefined && req.user.role === 'Super Admin') {
-        fields.push("department_id = ?");
-        values.push(department_id);
+      // Updating department scope
+      let scopeUpdated = false;
+      if (department_ids !== undefined) {
+        if (req.user.role === "HR") {
+          if (!department_ids || !Array.isArray(department_ids) || department_ids.length === 0) {
+            return res.status(403).json({ message: "HR cannot move leave types to global scope." });
+          }
+          const [managedDepts] = await pool.query(
+            "SELECT department_id FROM hr_departments WHERE user_id = ?",
+            [req.user.id]
+          );
+          const managedIds = new Set(managedDepts.map(d => d.department_id));
+          for (const deptId of department_ids) {
+            if (!managedIds.has(deptId)) {
+              return res.status(403).json({ message: `You do not have permission to move to department ID: ${deptId}.` });
+            }
+          }
+        }
+
+        // Update junction table
+        await pool.query("DELETE FROM leave_type_departments WHERE leave_type_id = ?", [id]);
+        if (department_ids && department_ids.length > 0) {
+          const ltdInserts = department_ids.map(deptId => [id, deptId]);
+          await pool.query("INSERT INTO leave_type_departments (leave_type_id, department_id) VALUES ?", [ltdInserts]);
+        }
+        scopeUpdated = true;
       }
 
-      if (fields.length === 0) {
+      if (fields.length === 0 && !scopeUpdated) {
         return res.status(400).json({ message: "No valid fields provided for update." });
       }
 
-      values.push(id);
-      await pool.query(
-        `UPDATE leave_types SET ${fields.join(", ")} WHERE id = ?`,
-        values,
-      );
+      if (fields.length > 0) {
+        values.push(id);
+        await pool.query(
+          `UPDATE leave_types SET ${fields.join(", ")} WHERE id = ?`,
+          values,
+        );
+      }
 
       const [updated] = await pool.query(
         `SELECT ${LT_SELECT} FROM leave_types WHERE id = ?`,
         [id],
       );
 
+      const [updatedRows] = await pool.query(
+        `SELECT ${LT_SELECT} FROM leave_types WHERE id = ?`,
+        [id],
+      );
+      const updatedLT = updatedRows[0];
+      const [ltdRows] = await pool.query(
+        "SELECT department_id FROM leave_type_departments WHERE leave_type_id = ?",
+        [id]
+      );
+      updatedLT.department_ids = ltdRows.map(r => r.department_id);
+
       res.json({
         message: "Leave type updated successfully.",
-        leaveType: updated[0],
+        leaveType: updatedLT,
       });
     } catch (err) {
       console.error("Update leave type error:", err);
@@ -302,7 +364,7 @@ router.delete(
 
     try {
       const [existing] = await pool.query(
-        "SELECT id, is_active, department_id FROM leave_types WHERE id = ?",
+        "SELECT id, is_active FROM leave_types WHERE id = ?",
         [id],
       );
 
@@ -314,15 +376,24 @@ router.delete(
 
       // Permission Check
       if (req.user.role === "HR") {
-        if (!lt.department_id) {
+        const [ltdRows] = await pool.query(
+          "SELECT department_id FROM leave_type_departments WHERE leave_type_id = ?",
+          [id]
+        );
+        if (ltdRows.length === 0) {
           return res.status(403).json({ message: "HR cannot delete global leave types." });
         }
-        const [check] = await pool.query(
-          "SELECT 1 FROM hr_departments WHERE user_id = ? AND department_id = ?",
-          [req.user.id, lt.department_id]
+
+        const [managedDepts] = await pool.query(
+          "SELECT department_id FROM hr_departments WHERE user_id = ?",
+          [req.user.id]
         );
-        if (check.length === 0) {
-          return res.status(403).json({ message: "You do not have permission to manage this department's leave types." });
+        const managedIds = new Set(managedDepts.map(d => d.department_id));
+
+        for (const r of ltdRows) {
+          if (!managedIds.has(r.department_id)) {
+            return res.status(403).json({ message: "You do not have permission to deactivate this leave type as it belongs to at least one department you don't manage." });
+          }
         }
       }
 

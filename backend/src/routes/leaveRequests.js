@@ -97,8 +97,15 @@ router.post("/", verifyToken, upload.array("files", 10), async (req, res) => {
     const currentYear = new Date().getFullYear();
 
     const [typeRows] = await pool.query(
-      `SELECT name, requires_attachment, requires_manager_approval, min_service_months FROM leave_types WHERE id = ?`,
-      [leave_type_id]
+      `SELECT name, requires_attachment, requires_manager_approval, min_service_months 
+       FROM leave_types 
+       WHERE id = ?
+       AND (
+         NOT EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = id)
+         OR
+         EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = id AND ltd.department_id = ?)
+       )`,
+      [leave_type_id, req.user.department_id || null]
     );
 
     if (typeRows.length === 0) {

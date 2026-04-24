@@ -28,7 +28,14 @@ router.get('/me', verifyToken, async (req, res) => {
 
     // 2. Fetch all relevant active leave types (Global or matching user's department)
     const [activeTypes] = await pool.query(
-      'SELECT id, default_days_per_year, min_service_months, carryover FROM leave_types WHERE is_active = 1 AND (department_id IS NULL OR department_id = ?)',
+      `SELECT id, default_days_per_year, min_service_months, carryover 
+       FROM leave_types 
+       WHERE is_active = 1 
+       AND (
+         NOT EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = id)
+         OR
+         EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = id AND ltd.department_id = ?)
+       )`,
       [req.user.department_id || null]
     );
 
@@ -100,8 +107,13 @@ router.get('/me', verifyToken, async (req, res) => {
        JOIN leave_types lt ON lb.leave_type_id = lt.id AND lt.is_active = 1
        WHERE lb.user_id = ?
          AND lb.year   = ?
+         AND (
+           NOT EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = lt.id)
+           OR
+           EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = lt.id AND ltd.department_id = ?)
+         )
        ORDER BY lt.name ASC`,
-      [req.user.id, currentYear]
+      [req.user.id, currentYear, req.user.department_id || null]
     );
 
     // Map rows to include eligibility flag
@@ -160,7 +172,14 @@ router.get(
 
       const targetUser = userRows[0];
       const [activeTypes] = await pool.query(
-        'SELECT id, default_days_per_year, min_service_months, carryover FROM leave_types WHERE is_active = 1 AND (department_id IS NULL OR department_id = ?)',
+        `SELECT id, default_days_per_year, min_service_months, carryover 
+         FROM leave_types 
+         WHERE is_active = 1 
+         AND (
+           NOT EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = id)
+           OR
+           EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = id AND ltd.department_id = ?)
+         )`,
         [targetUser.department_id || null]
       );
       const [existingBalances] = await pool.query('SELECT leave_type_id FROM leave_balances WHERE user_id = ? AND year = ?', [userId, year]);
@@ -221,8 +240,13 @@ router.get(
          JOIN leave_types lt ON lb.leave_type_id = lt.id AND lt.is_active = 1
          WHERE lb.user_id = ?
            AND lb.year   = ?
+           AND (
+             NOT EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = lt.id)
+             OR
+             EXISTS (SELECT 1 FROM leave_type_departments ltd WHERE ltd.leave_type_id = lt.id AND ltd.department_id = ?)
+           )
          ORDER BY lt.name ASC`,
-        [userId, year],
+        [userId, year, targetUser.department_id || null],
       )
 
       // Map rows to include eligibility flag
