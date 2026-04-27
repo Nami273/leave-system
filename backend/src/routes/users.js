@@ -49,7 +49,29 @@ router.get("/me", verifyToken, async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    res.json({ user: rows[0] });
+    const user = rows[0];
+
+    // Fetch managed departments
+    const isHR = user.role === "HR";
+    const isManager = user.role === "Manager";
+
+    if (isHR || isManager) {
+      const table = isHR ? "hr_departments" : "manager_departments";
+      const [deptRows] = await pool.query(
+        `SELECT d.id, d.name 
+         FROM ${table} x 
+         JOIN departments d ON x.department_id = d.id 
+         WHERE x.user_id = ?`,
+        [req.user.id]
+      );
+      user.managed_department_ids = deptRows.map((r) => r.id);
+      user.managed_departments = deptRows.map((r) => r.name);
+    } else {
+      user.managed_department_ids = [];
+      user.managed_departments = [];
+    }
+
+    res.json({ user });
   } catch (err) {
     console.error("GET /me error:", err);
     res.status(500).json({ message: "Internal server error." });
@@ -188,7 +210,7 @@ router.put("/me", verifyToken, async (req, res) => {
     );
 
     // Return the freshly updated profile
-    const [rows] = await pool.query(
+    const [freshRows] = await pool.query(
       `SELECT ${USER_SELECT}
        FROM   users u
        ${USER_JOINS}
@@ -196,7 +218,29 @@ router.put("/me", verifyToken, async (req, res) => {
       [req.user.id],
     );
 
-    res.json({ message: "Profile updated successfully.", user: rows[0] });
+    const freshUser = freshRows[0];
+
+    // Fetch managed departments for fresh user
+    const isHRNew = freshUser.role === "HR";
+    const isManagerNew = freshUser.role === "Manager";
+
+    if (isHRNew || isManagerNew) {
+      const table = isHRNew ? "hr_departments" : "manager_departments";
+      const [deptRows] = await pool.query(
+        `SELECT d.id, d.name 
+         FROM ${table} x 
+         JOIN departments d ON x.department_id = d.id 
+         WHERE x.user_id = ?`,
+        [req.user.id]
+      );
+      freshUser.managed_department_ids = deptRows.map((r) => r.id);
+      freshUser.managed_departments = deptRows.map((r) => r.name);
+    } else {
+      freshUser.managed_department_ids = [];
+      freshUser.managed_departments = [];
+    }
+
+    res.json({ message: "Profile updated successfully.", user: freshUser });
   } catch (err) {
     console.error("PUT /me error:", err);
     res.status(500).json({ message: "Internal server error." });

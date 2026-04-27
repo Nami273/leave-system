@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react"
 import Header from "../../components/Header"
 import api from "../../services/api"
-import { Search } from "lucide-react"
+import { Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { resolveLeaveTypeStyle } from "../../utils/leaveTypeUtils"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -177,6 +177,17 @@ export default function History({ onNavigate }) {
     return list
   }, [requests, filter, search])
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 8
+
+  // Reset to page 1 when filter/search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filter, search, requests])
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1
+  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
   const countByStatus = (s) => requests.filter(r => r.status === s).length
 
   return (
@@ -276,7 +287,53 @@ export default function History({ onNavigate }) {
               <p className="text-[#94a3b8] font-medium">No records found.</p>
             </div>
           ) : (
-            filtered.map(req => <HistoryRow key={req.id} req={req} onNavigate={onNavigate} />)
+            <>
+              <div className="space-y-3 mb-8">
+                {paginated.map(req => <HistoryRow key={req.id} req={req} onNavigate={onNavigate} />)}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between bg-white border border-[#e2e8f0]/60 rounded-[24px] px-6 py-4 shadow-sm">
+                  <p className="text-[14px] font-semibold text-[#94a3b8]">
+                    Showing <span className="text-[#2d3e50]">{Math.min(filtered.length, (currentPage - 1) * itemsPerPage + 1)}-{Math.min(filtered.length, currentPage * itemsPerPage)}</span> of <span className="text-[#2d3e50]">{filtered.length}</span> records
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${currentPage === 1 ? 'text-[#cbd5e1] cursor-not-allowed' : 'text-[#2d3e50] hover:bg-[#f8fafc] hover:scale-105 active:scale-95'}`}
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {[...Array(totalPages)].map((_, i) => {
+                        const p = i + 1
+                        const isActive = currentPage === p
+                        return (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p)}
+                            className={`w-10 h-10 rounded-xl text-[14px] font-bold transition-all ${isActive ? '!bg-[#1c355e] text-white shadow-md' : 'text-[#94a3b8] hover:bg-[#f8fafc] hover:text-[#2d3e50]'}`}
+                          >
+                            {p}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${currentPage === totalPages ? 'text-[#cbd5e1] cursor-not-allowed' : 'text-[#2d3e50] hover:bg-[#f8fafc] hover:scale-105 active:scale-95'}`}
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>
