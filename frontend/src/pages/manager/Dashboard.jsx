@@ -9,11 +9,11 @@ import {
 import { resolveLeaveTypeStyle } from "../../utils/leaveTypeUtils"
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function getTimeGreeting() {
+function getGreeting() {
   const h = new Date().getHours()
-  if (h < 12) return "Good morning"
-  if (h < 17) return "Good afternoon"
-  return "Good evening"
+  if (h < 12) return "Ready to manage your team"
+  if (h < 17) return "Keeping the team on track"
+  return "Great leadership today"
 }
 
 const MONTH_NAMES = [
@@ -363,10 +363,13 @@ export default function Dashboard({ onNavigate }) {
 
         {/* ── Greeting ── */}
         <div className="mb-12 mt-4">
-          <h1 className="text-[62px] font-fredoka font-[600] text-[#3f4a51] mb-2 flex items-center gap-4">
-            {getTimeGreeting()}, {displayName}!
-            <span className="text-[58px]" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.15))" }}>✨</span>
-          </h1>
+          <div className="flex items-start gap-4 mb-2">
+            <h1 className="text-[62px] font-fredoka font-[600] text-[#3f4a51] leading-[1.1]">
+              <span className="block">{getGreeting()},</span>
+              <span className="block">{displayName}!</span>
+            </h1>
+            <span className="text-[58px] leading-none" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.15))" }}>✨</span>
+          </div>
           <p className="text-[#64748b] text-[19px] font-medium max-w-xl">
             {actionableCount > 0
               ? <>You have <span className="font-bold text-[#3f4a51]">{actionableCount} request{actionableCount !== 1 ? "s" : ""}</span> waiting for your attention.</>

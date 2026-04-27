@@ -16,11 +16,11 @@ const QUOTE_TEMPLATES = [
   { text: "Life's too short to skip rest. You have ", suffix: " of {type} left to enjoy!" },
 ]
 
-function getTimeGreeting() {
+function getGreeting() {
   const hour = new Date().getHours()
-  if (hour < 12) return "Good morning"
-  if (hour < 17) return "Good afternoon"
-  return "Good evening"
+  if (hour < 12) return "Plan your next getaway"
+  if (hour < 17) return "Need a well-deserved break"
+  return "Time to relax and recharge"
 }
 
 export default function Dashboard({ onNavigate }) {
@@ -101,10 +101,13 @@ export default function Dashboard({ onNavigate }) {
       <main className="max-w-6xl mx-auto px-6 py-12 w-full flex-grow">
         {/* Greeting */}
         <div className="mb-14 mt-4">
-          <h1 className="text-[64px] font-fredoka font-[600] text-[#3f4a51] mb-2 flex items-center gap-4">
-            {getTimeGreeting()}, {displayName}!
-            <span className="text-[72px]" style={{filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.15))"}}>☁️</span>
-          </h1>
+          <div className="flex items-start gap-4 mb-2">
+            <h1 className="text-[64px] font-fredoka font-[600] text-[#3f4a51] leading-[1.1]">
+              <span className="block">{getGreeting()},</span>
+              <span className="block">{displayName}!</span>
+            </h1>
+            <span className="text-[72px] leading-none" style={{filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.15))"}}>☁️</span>
+          </div>
           <p className="text-[#64748b] text-[20px] max-w-2xl font-medium tracking-wide">
             {randomQuote.text} 
             {randomQuote.value && <span className="font-bold text-[#3f4a51]">{randomQuote.value}</span>}
