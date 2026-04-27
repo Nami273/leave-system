@@ -527,27 +527,16 @@ export default function EmployeeProfile({ onNavigate }) {
                       const statusTheme = getRequestTheme(request.status)
                       
                       let dateRange = formatDateShort(request.start_date);
-                      const sTime = new Date(request.start_date);
-                      const eTime = new Date(request.end_date);
-                      const isFractional = (request.total_days % 1) !== 0;
-                      const isNonStandard = sTime.getHours() !== 9 || sTime.getMinutes() !== 0 || eTime.getHours() !== 17 || eTime.getMinutes() !== 0;
-
-                      if (isFractional || isNonStandard) {
-                        const sTimeStr = sTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                        const eTimeStr = eTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                        if (isSameDayStr(request.start_date, request.end_date)) {
-                          dateRange = `${formatDateShort(request.start_date)} (${sTimeStr} - ${eTimeStr})`;
-                        } else {
-                          dateRange = `${formatDateShort(request.start_date)} ${sTimeStr} - ${formatDateShort(request.end_date)} ${eTimeStr}`;
-                        }
-                      } else {
-                        if (!isSameDayStr(request.start_date, request.end_date)) {
-                          dateRange += ` - ${formatDateShort(request.end_date)}`;
-                        }
+                      if (!isSameDayStr(request.start_date, request.end_date)) {
+                        dateRange += ` - ${formatDateShort(request.end_date)}`;
                       }
 
                       return (
-                        <div key={request.id} className="flex items-center gap-4 p-4 bg-[#f9fafb] rounded-[22px] hover:bg-[#f1f5f9] transition-colors">
+                        <div 
+                          key={request.id} 
+                          onClick={() => onNavigate && onNavigate(`requests/${request.id}`)}
+                          className="flex items-center gap-4 p-4 bg-[#f9fafb] rounded-[22px] hover:bg-[#f1f5f9] transition-all cursor-pointer hover:scale-[1.005] active:scale-[0.995]"
+                        >
                           <div className="flex items-center gap-2 min-w-[130px]">
                             <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: bg }}>
                               <Icon size={15} color={color} strokeWidth={2.5} />
