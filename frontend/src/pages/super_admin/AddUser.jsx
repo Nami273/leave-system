@@ -4,11 +4,7 @@ import { ChevronDown, CheckCircle, Bell, Settings, User, Briefcase, Lock, UserPl
 import api from "../../services/api"
 import Header from "../../components/Header"
 
-const ROLES = [
-  { id: 'rl000001-0000-0000-0000-000000000001', name: 'Employee' },
-  { id: 'rl000001-0000-0000-0000-000000000002', name: 'Manager' },
-  { id: 'rl000001-0000-0000-0000-000000000003', name: 'HR' }
-];
+
 
 const POSITIONS = [
   { id: 'ps000001-0000-0000-0000-000000000001', name: 'Developer' },
@@ -43,21 +39,26 @@ export default function AddUser({ onNavigate }) {
   })
 
   const [departments, setDepartments] = useState([])
+  const [roles, setRoles] = useState([])
 
   useEffect(() => {
-    const fetchDepts = async () => {
+    const fetchMetadata = async () => {
       try {
-        const { data } = await api.get('/departments')
-        const depts = data.departments || []
+        const [deptRes, roleRes] = await Promise.all([
+          api.get('/departments'),
+          api.get('/metadata/roles')
+        ])
+        const depts = deptRes.data.departments || []
         setDepartments(depts)
+        setRoles(roleRes.data.roles || [])
         if (depts.length > 0) {
           setForm(p => ({ ...p, department: depts[0].id }))
         }
       } catch (err) {
-        console.error("Failed to fetch departments:", err)
+        console.error("Failed to fetch metadata:", err)
       }
     }
-    fetchDepts()
+    fetchMetadata()
   }, [])
 
   const [loading, setLoading] = useState(false)
@@ -212,7 +213,7 @@ export default function AddUser({ onNavigate }) {
                   onChange={(e) => setForm(p => ({ ...p, role: e.target.value }))}
                   className="bg-[#f4f7f9] rounded-full py-3 px-5 text-[14px] font-bold text-[#323940] outline-none appearance-none cursor-pointer w-full focus:ring-2 focus:ring-[#567278]/20"
                 >
-                  {ROLES.map(r => (
+                  {roles.map(r => (
                     <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
                 </select>

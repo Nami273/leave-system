@@ -4,11 +4,7 @@ import { Camera, ChevronDown, CheckCircle, Ban, Shield, Bell, Settings, User, Br
 import api from "../../services/api"
 import Header from "../../components/Header"
 
-const ROLES = [
-  { id: 'rl000001-0000-0000-0000-000000000001', name: 'Employee' },
-  { id: 'rl000001-0000-0000-0000-000000000002', name: 'Manager' },
-  { id: 'rl000001-0000-0000-0000-000000000003', name: 'HR' }
-];
+
 
 const POSITIONS = [
   { id: 'ps000001-0000-0000-0000-000000000001', name: 'Developer' },
@@ -51,17 +47,22 @@ export default function EditUser({ onNavigate }) {
   const [showSuccess, setShowSuccess] = useState(false)
   const [profileImg, setProfileImg] = useState(null)
   const [departments, setDepartments] = useState([])
+  const [roles, setRoles] = useState([])
 
   useEffect(() => {
-    const fetchDepts = async () => {
+    const fetchMetadata = async () => {
       try {
-        const { data } = await api.get('/departments')
-        setDepartments(data.departments || [])
+        const [deptRes, roleRes] = await Promise.all([
+          api.get('/departments'),
+          api.get('/metadata/roles')
+        ])
+        setDepartments(deptRes.data.departments || [])
+        setRoles(roleRes.data.roles || [])
       } catch (err) {
-        console.error("Failed to fetch departments:", err)
+        console.error("Failed to fetch metadata:", err)
       }
     }
-    fetchDepts()
+    fetchMetadata()
   }, [])
 
   useEffect(() => {
@@ -172,16 +173,14 @@ export default function EditUser({ onNavigate }) {
 
   const fullName = form.fullName.trim()
 
-  // Privilege descriptions based on role
-  const privilegeDesc = {
-    'HR': { title: 'HR', desc: `As an HR, ${form.firstName} can manage employee records, approve leave requests, and view payroll summaries.` },
-    'Manager': { title: 'Manager', desc: `As a Manager, ${form.firstName} can approve team leave requests, view team reports, and manage direct reports.` },
-    'Employee': { title: 'Employee', desc: `As an Employee, ${form.firstName} can submit leave requests, view their own leave balance, and update personal information.` },
-    'Super Admin': { title: 'Super Admin', desc: `As a Super Admin, ${form.firstName} has full system access including user management, system configuration, and all administrative functions.` },
+  const shortName = form.fullName ? form.fullName.split(' ')[0] : 'this user';
+  
+  const currentRole = roles.find(r => r.id === form.role) || roles.find(r => r.name === 'Employee') || { name: 'Employee', description: `As an Employee, {name} can submit leave requests, view their personal leave balances, and track their request history.` };
+  
+  const priv = {
+    title: currentRole.name,
+    desc: (currentRole.description || "").replace("{name}", shortName)
   }
-
-  const currentRoleName = ROLES.find(r => r.id === form.role)?.name || 'Employee'
-  const priv = privilegeDesc[currentRoleName] || privilegeDesc['Employee']
 
   return (
     <div className="min-h-screen bg-[#eef2f9] flex flex-col font-nunito">
@@ -341,7 +340,7 @@ export default function EditUser({ onNavigate }) {
                     onChange={(e) => setForm(p => ({ ...p, role: e.target.value }))}
                     className="bg-[#f4f7f9] rounded-full py-3 px-5 text-[14px] font-bold text-[#323940] outline-none appearance-none cursor-pointer w-full focus:ring-2 focus:ring-[#567278]/20"
                   >
-                    {ROLES.map(r => (
+                    {roles.map(r => (
                       <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
                   </select>
