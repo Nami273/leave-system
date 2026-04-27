@@ -261,7 +261,11 @@ export default function Settings({ onNavigate, HeaderComponent }) {
                       <label className="block text-[12px] font-[800] tracking-widest uppercase text-[#94a3b8] mb-2">Department</label>
                       <input
                         type="text"
-                        value={profileData.department || "General"}
+                        value={
+                          (user?.managed_departments && user.managed_departments.length > 0)
+                            ? user.managed_departments.join(", ")
+                            : (profileData.department || "General")
+                        }
                         readOnly
                         className="w-full h-12 px-4 bg-[#f4f7fb] rounded-[16px] text-[14px] font-medium text-[#94a3b8] cursor-not-allowed outline-none"
                       />

@@ -4,7 +4,7 @@ import Header from "../../components/Header"
 import api from "../../services/api"
 import {
   ChevronLeft, ChevronRight,
-  CheckCircle, XCircle, ExternalLink, ChevronDown, ChevronUp, AlertTriangle
+  CheckCircle, XCircle, ExternalLink, ChevronDown, ChevronUp, AlertTriangle, Search
 } from "lucide-react"
 import { resolveLeaveTypeStyle } from "../../utils/leaveTypeUtils"
 
@@ -518,6 +518,8 @@ export default function Approvals({ onNavigate }) {
   // Count pending + acknowledged for the subtitle
   const actionableCount = allRequests.filter(r => r.status === "pending" || r.status === "acknowledged").length
 
+  const [search, setSearch] = useState("")
+
   const FILTERS = [
     { key: "all", label: "All" },
     { key: "pending", label: "Pending", badgeBg: '#fee481', badgeText: '#6b5413' },
@@ -531,8 +533,13 @@ export default function Approvals({ onNavigate }) {
   }, [allRequests, selectedDate])
 
   const filtered = useMemo(() => {
-    return filter === "all" ? dateFiltered : dateFiltered.filter(r => r.status === filter)
-  }, [dateFiltered, filter])
+    let list = filter === "all" ? dateFiltered : dateFiltered.filter(r => r.status === filter)
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter(r => r.full_name?.toLowerCase().includes(q))
+    }
+    return list
+  }, [dateFiltered, filter, search])
 
   const countByStatus = (s) => dateFiltered.filter(r => r.status === s).length
 
@@ -618,6 +625,18 @@ export default function Approvals({ onNavigate }) {
               >×</button>
             </span>
           )}
+
+          {/* Search Input */}
+          <div className="relative ml-auto min-w-[240px]">
+            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]" strokeWidth={2.5} />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name…"
+              className="w-full h-9 pl-10 pr-4 bg-white border border-[#e2e8f0] rounded-full text-[13px] font-medium text-[#2d3e50] placeholder:text-[#b0bac6] focus:outline-none focus:ring-2 focus:ring-[#1c355e]/20 transition-all"
+            />
+          </div>
         </div>
 
 

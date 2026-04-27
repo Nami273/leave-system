@@ -270,13 +270,12 @@ function TeamCapacity({ totalMembers, outToday }) {
   const circ = 2 * Math.PI * radius
   const offset = circ - (capacity / 100) * circ
 
-  let label = "All green! 🎉"
-  if (capacity < 70) label = "Heads up! 😬"
-  else if (capacity < 90) label = "Looking good! 🙂"
+  let label = outToday === 0 ? "Full Strength! 🚀" : "Team Status Update";
 
   const getColor = (cap) => {
-    if (cap >= 60) return "#16a34a" // Brighter Green
-    if (cap >= 40) return "#f57a00" // Orange
+    if (cap >= 90) return "#16a34a" // Brighter Green
+    if (cap >= 70) return "#16a34a"
+    if (cap >= 40) return "#16a34a"
     return "#f56464" // Red
   }
   const color = getColor(capacity)
@@ -302,8 +301,10 @@ function TeamCapacity({ totalMembers, outToday }) {
         </div>
       </div>
       <p className="text-[14px] font-bold text-[#3f4a51] mt-1">{label}</p>
-      <p className="text-[12px] text-[#94a3b8] mt-0.5">
-        {outToday} of {totalMembers} members out today
+      <p className="text-[12px] text-[#94a3b8] mt-0.5 text-center">
+        {outToday === 0
+          ? "Everyone is joining today."
+          : `${outToday} from ${totalMembers} team members are on leave today.`}
       </p>
     </div>
   )
@@ -434,7 +435,7 @@ export default function Dashboard({ onNavigate }) {
                 {recent.map(req => {
                   const { Icon, color, bg } = resolveLeaveTypeStyle(req.leave_type_icon, req.leave_type_color)
                   const style = STATUS_STYLES[req.status?.toLowerCase()] || STATUS_STYLES.pending
-                  
+
                   let dateRange = formatDateShort(req.start_date);
                   if (!isSameDayStr(req.start_date, req.end_date)) {
                     dateRange += ` - ${formatDateShort(req.end_date)}`;
