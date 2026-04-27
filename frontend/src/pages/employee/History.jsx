@@ -149,7 +149,7 @@ export default function History({ onNavigate }) {
   if (appliedRange) {
     const { from, to } = appliedRange
     filteredData = filteredData.filter(item => {
-      return item.start >= from && item.end <= to
+      return item.start <= to && item.end >= from
     })
   }
 
