@@ -223,11 +223,11 @@ router.post("/", verifyToken, upload.array("files", 10), async (req, res) => {
 
     // ── Save uploaded files ──────────────────────────────────────────────────
     if (req.files && req.files.length > 0) {
-      const fileInserts = req.files.map(f => [
+      const fileInserts = req.files.map((f) => [
         uuidv4(),
         id,
         f.originalname,
-        f.filename,
+        f.path, // Cloudinary URL
         f.mimetype,
         f.size,
       ]);
